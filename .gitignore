@@ -41,3 +41,6 @@ Thumbs.db
 # Local helper script output
 node-scan.txt
 node-install.txt
+
+# Windows helper script output
+publish-log.txt
