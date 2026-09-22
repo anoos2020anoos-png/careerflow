@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /*
+   * Design tokens. Values are space-separated RGB channels so Tailwind can
+   * apply opacity modifiers (e.g. `bg-brand/10`).
+   */
+  :root {
+    --cf-canvas: 248 250 252; /* #F8FAFC */
+    --cf-surface: 255 255 255;
+    --cf-surface-muted: 241 245 249;
+    --cf-line: 226 232 240; /* #E2E8F0 */
+    --cf-ink: 15 23 42; /* #0F172A */
+    --cf-ink-muted: 100 116 139; /* #64748B */
+
+    --cf-brand: 79 70 229; /* #4F46E5 */
+    --cf-brand-strong: 67 56 202;
+    --cf-brand-soft: 238 242 255;
+
+    --cf-success: 21 128 61;
+    --cf-success-soft: 240 253 244;
+    --cf-warning: 180 83 9;
+    --cf-warning-soft: 255 251 235;
+    --cf-danger: 185 28 28;
+    --cf-danger-soft: 254 242 242;
+    --cf-info: 3 105 161;
+    --cf-info-soft: 240 249 255;
+  }
+
+  .dark {
+    --cf-canvas: 9 12 22;
+    --cf-surface: 18 24 38;
+    --cf-surface-muted: 28 36 53;
+    --cf-line: 42 52 71;
+    --cf-ink: 226 232 240;
+    --cf-ink-muted: 148 163 184;
+
+    --cf-brand: 129 140 248;
+    --cf-brand-strong: 165 180 252;
+    --cf-brand-soft: 32 38 66;
+
+    --cf-success: 74 222 128;
+    --cf-success-soft: 20 45 33;
+    --cf-warning: 251 191 36;
+    --cf-warning-soft: 52 40 16;
+    --cf-danger: 248 113 113;
+    --cf-danger-soft: 57 25 25;
+    --cf-info: 125 211 252;
+    --cf-info-soft: 15 40 56;
+  }
+
+  * {
+    @apply border-line;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-canvas text-ink antialiased;
+    font-family: theme('fontFamily.sans');
+    /* Prevent page-wide horizontal scrolling on narrow viewports. */
+    overflow-x: hidden;
+  }
+
+  /* A single, consistent, clearly visible focus ring across the app. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand ring-offset-2 ring-offset-canvas;
+    border-radius: 0.375rem;
+  }
+
+  /* Respect the operating-system reduced-motion preference. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .cf-card {
+    @apply rounded-xl border border-line bg-surface shadow-card;
+  }
+
+  .cf-skip-link {
+    @apply sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50
+           focus:rounded-md focus:bg-brand focus:px-4 focus:py-2 focus:text-sm
+           focus:font-medium focus:text-white;
+  }
+
+  /* Recharts injects inline SVG text; keep it on the muted ink token. */
+  .cf-chart .recharts-cartesian-axis-tick-value,
+  .cf-chart .recharts-polar-angle-axis-tick-value {
+    fill: rgb(var(--cf-ink-muted));
+    font-size: 12px;
+  }
+
+  .cf-chart .recharts-cartesian-grid line {
+    stroke: rgb(var(--cf-line));
+  }
+}
+
+/* Thin, unobtrusive scrollbars for the Kanban columns. */
+.cf-scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.cf-scroll::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--cf-line));
+  border-radius: 9999px;
+}
+.cf-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--cf-line)) transparent;
+}
