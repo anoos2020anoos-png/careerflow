@@ -25,7 +25,8 @@
     "forceConsistentCasingInFileNames": true,
 
     "types": ["vitest/globals", "@testing-library/jest-dom"],
-    "baseUrl": ".",
+    // Resolved relative to this file. `baseUrl` is deliberately not set: it is
+    // deprecated in newer TypeScript and is not needed for path aliases.
     "paths": {
       "@/*": ["./src/*"]
     }
