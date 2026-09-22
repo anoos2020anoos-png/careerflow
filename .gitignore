@@ -19,6 +19,9 @@ coverage/
 .env.local
 .env.*.local
 
+# Local verification output (see verify.bat)
+verify-output.txt
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
