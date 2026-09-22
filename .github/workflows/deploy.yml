@@ -47,6 +47,10 @@ jobs:
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
+        with:
+          # Turns Pages on for the repository the first time this runs, so no
+          # one has to flip it by hand in Settings -> Pages.
+          enablement: true
 
       - name: Upload the built site
         uses: actions/upload-pages-artifact@v3
