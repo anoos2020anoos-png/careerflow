@@ -95,7 +95,7 @@ export function FiltersBar({
             Search by company or role
           </label>
           <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
+            className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
             aria-hidden="true"
           />
           <Input
@@ -104,7 +104,7 @@ export function FiltersBar({
             value={state.search}
             onChange={(event) => onChange({ ...state, search: event.target.value })}
             placeholder="Search company or role"
-            className="pl-9"
+            className="ps-9"
           />
         </div>
 
@@ -117,7 +117,7 @@ export function FiltersBar({
           <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
           Filters
           {activeCount > 0 ? (
-            <span className="ml-1 rounded-full bg-white/25 px-1.5 text-xs">{activeCount}</span>
+            <span className="ms-1 rounded-full bg-white/25 px-1.5 text-xs">{activeCount}</span>
           ) : null}
         </Button>
 

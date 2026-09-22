@@ -34,7 +34,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(
   function Select({ className, children, ...props }, ref) {
     return (
-      <select ref={ref} className={cn(CONTROL_BASE, 'h-10 pr-8', className)} {...props}>
+      <select ref={ref} className={cn(CONTROL_BASE, 'h-10 pe-8', className)} {...props}>
         {children}
       </select>
     );
@@ -83,7 +83,7 @@ export function Field({
       <label htmlFor={id} className="text-sm font-medium text-ink">
         {label}
         {required ? (
-          <span className="ml-1 text-danger" aria-hidden="true">
+          <span className="ms-1 text-danger" aria-hidden="true">
             *
           </span>
         ) : null}

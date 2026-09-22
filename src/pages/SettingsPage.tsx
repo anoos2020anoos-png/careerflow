@@ -205,7 +205,7 @@ export function SettingsPage() {
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-danger" aria-hidden="true" />
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-ink">{feedback.message}</p>
-                  <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-ink-muted">
+                  <ul className="mt-1 list-disc space-y-0.5 ps-4 text-xs text-ink-muted">
                     {feedback.details.map((detail) => (
                       <li key={detail} className="break-words">
                         {detail}

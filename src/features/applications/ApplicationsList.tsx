@@ -51,7 +51,7 @@ export function ApplicationsList({
             Job applications, with status, dates and actions for each row
           </caption>
           <thead>
-            <tr className="border-b border-line bg-surface-muted/60 text-left">
+            <tr className="border-b border-line bg-surface-muted/60 text-start">
               <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                 Role
               </th>
@@ -67,7 +67,7 @@ export function ApplicationsList({
               <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                 Updated
               </th>
-              <th scope="col" className="px-4 py-3 text-right font-medium text-ink-muted">
+              <th scope="col" className="px-4 py-3 text-end font-medium text-ink-muted">
                 Actions
               </th>
             </tr>

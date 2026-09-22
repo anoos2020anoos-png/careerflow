@@ -140,7 +140,7 @@ export function Dialog({
           <button
             type="button"
             onClick={onClose}
-            className="-mr-1 -mt-1 rounded-lg p-2 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
+            className="-me-1 -mt-1 rounded-lg p-2 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
           >
             <X className="h-4 w-4" aria-hidden="true" />
             <span className="sr-only">Close dialog</span>

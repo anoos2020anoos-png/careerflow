@@ -27,7 +27,7 @@ export function AppShell() {
       </a>
 
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-line bg-surface lg:flex">
+      <aside className="fixed inset-y-0 start-0 z-30 hidden w-60 flex-col border-e border-line bg-surface lg:flex">
         <div className="flex h-16 items-center px-5">
           <Logo />
         </div>
@@ -72,14 +72,14 @@ export function AppShell() {
       </header>
 
       {/* Desktop top bar */}
-      <div className="hidden h-16 items-center justify-end gap-3 border-b border-line bg-surface px-6 lg:flex lg:pl-[16rem]">
+      <div className="hidden h-16 items-center justify-end gap-3 border-b border-line bg-surface px-6 lg:flex lg:ps-[16rem]">
         <ThemeToggle />
       </div>
 
       <main
         id="main-content"
         tabIndex={-1}
-        className="px-4 pb-24 pt-5 focus:outline-none sm:px-6 lg:ml-60 lg:px-8 lg:pb-12 lg:pt-6"
+        className="px-4 pb-24 pt-5 focus:outline-none sm:px-6 lg:ms-60 lg:px-8 lg:pb-12 lg:pt-6"
       >
         <StorageNotice />
         <Outlet />
