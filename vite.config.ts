@@ -20,6 +20,18 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        // Recharts and React change far less often than application code, so
+        // splitting them out keeps the big vendor chunks cached across deploys
+        // and brings each chunk under Rollup's 500 kB advisory limit.
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          charts: ['recharts'],
+          forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
+        },
+      },
+    },
   },
   test: {
     globals: true,

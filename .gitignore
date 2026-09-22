@@ -37,3 +37,7 @@ logs/
 .DS_Store
 Thumbs.db
 *.swp
+
+# Local helper script output
+node-scan.txt
+node-install.txt

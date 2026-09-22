@@ -39,6 +39,15 @@ async function openCreateDialog(user: ReturnType<typeof userEvent.setup>) {
   return screen.getByRole('dialog');
 }
 
+/**
+ * The list renders twice — a table for wide screens and cards for narrow ones —
+ * and CSS decides which is visible. jsdom applies no CSS, so both are in the
+ * document and a job title matches twice. Scope row assertions to the table.
+ */
+function inTable() {
+  return within(screen.getByRole('table'));
+}
+
 describe('ApplicationsPage — creating', () => {
   it('adds an application and shows it in the list', async () => {
     const user = userEvent.setup();
@@ -55,7 +64,9 @@ describe('ApplicationsPage — creating', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    expect(await screen.findByText('React Engineer')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(inTable().getByText('React Engineer')).toBeInTheDocument();
+    });
     expect(screen.getByText(/showing 3 of 3 applications/i)).toBeInTheDocument();
   });
 
@@ -147,7 +158,7 @@ describe('ApplicationsPage — search and filters', () => {
     await waitFor(() => {
       expect(screen.getByText(/showing 1 of 2 applications/i)).toBeInTheDocument();
     });
-    expect(screen.getByText('Product Engineer')).toBeInTheDocument();
+    expect(inTable().getByText('Product Engineer')).toBeInTheDocument();
   });
 });
 

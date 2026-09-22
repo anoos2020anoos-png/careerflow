@@ -5,7 +5,7 @@ import { APPLICATION_STATUSES, STATUS_LABELS, WORK_ARRANGEMENT_LABELS } from '@/
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusSelect } from '@/features/applications/StatusSelect';
-import { STATUS_TONES } from '@/components/ui/StatusBadge';
+import { STATUS_TONES } from '@/lib/statusStyles';
 import { formatDateOnly } from '@/lib/dates';
 import { pluralize } from '@/lib/format';
 
