@@ -8,12 +8,15 @@ import { StatCard } from '@/features/dashboard/StatCard';
 import { ActivityChart } from '@/features/dashboard/ActivityChart';
 import { StatusChart } from '@/features/dashboard/StatusChart';
 import { OpenTasksCard, UpcomingInterviewsCard } from '@/features/dashboard/UpcomingPanel';
+import { OutcomesCard } from '@/features/dashboard/OutcomesCard';
 import { useAppData } from '@/state/app-data-context';
 import { computeDashboardMetrics } from '@/lib/metrics';
+import { computeOutcomeStats } from '@/lib/outcomes';
 
 export function DashboardPage() {
   const { applications } = useAppData();
   const metrics = useMemo(() => computeDashboardMetrics(applications), [applications]);
+  const outcomes = useMemo(() => computeOutcomeStats(applications), [applications]);
 
   if (applications.length === 0) {
     return (
@@ -91,6 +94,10 @@ export function DashboardPage() {
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <UpcomingInterviewsCard items={metrics.upcomingInterviewList} />
         <OpenTasksCard items={metrics.openTaskList} />
+      </div>
+
+      <div className="mt-5">
+        <OutcomesCard stats={outcomes} />
       </div>
     </>
   );
