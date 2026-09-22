@@ -46,11 +46,11 @@ jobs:
         run: npm run build
 
       - name: Configure GitHub Pages
+        # Pages must already be switched on for the repository, with
+        # Settings -> Pages -> Source set to "GitHub Actions". The default
+        # GITHUB_TOKEN cannot create the Pages site itself, so this step reads
+        # the existing configuration rather than trying to enable it.
         uses: actions/configure-pages@v5
-        with:
-          # Turns Pages on for the repository the first time this runs, so no
-          # one has to flip it by hand in Settings -> Pages.
-          enablement: true
 
       - name: Upload the built site
         uses: actions/upload-pages-artifact@v3
