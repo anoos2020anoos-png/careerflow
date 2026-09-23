@@ -10,31 +10,39 @@ import { StatusChart } from '@/features/dashboard/StatusChart';
 import { OpenTasksCard, UpcomingInterviewsCard } from '@/features/dashboard/UpcomingPanel';
 import { OutcomesCard } from '@/features/dashboard/OutcomesCard';
 import { useAppData } from '@/state/app-data-context';
+import { useI18n } from '@/i18n/i18n-context';
 import { computeDashboardMetrics } from '@/lib/metrics';
 import { computeOutcomeStats } from '@/lib/outcomes';
 
 export function DashboardPage() {
   const { applications } = useAppData();
-  const metrics = useMemo(() => computeDashboardMetrics(applications), [applications]);
+  const { t, locale } = useI18n();
+  // `locale` is a dependency because the activity buckets carry a formatted
+  // date label, which has to be rebuilt when the language changes.
+  const metrics = useMemo(
+    () => computeDashboardMetrics(applications),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [applications, locale],
+  );
   const outcomes = useMemo(() => computeOutcomeStats(applications), [applications]);
 
   if (applications.length === 0) {
     return (
       <>
         <PageHeader
-          title="Dashboard"
-          description="A summary of your job search, calculated from the applications you have saved."
+          title={t('dashboard.title')}
+          description={t('dashboard.descriptionEmpty')}
         />
         <div className="cf-card">
           <EmptyState
             icon={Briefcase}
-            title="No applications yet"
-            description="Add your first application and this dashboard will fill in: totals, weekly activity, status breakdown, interviews and follow-ups. You can also restore the sample data from Settings."
+            title={t('dashboard.emptyTitle')}
+            description={t('dashboard.emptyDescription')}
             action={
               <Link to="/applications">
                 <Button variant="primary">
                   <Plus className="h-4 w-4" aria-hidden="true" />
-                  Add an application
+                  {t('dashboard.addFirst')}
                 </Button>
               </Link>
             }
@@ -47,13 +55,13 @@ export function DashboardPage() {
   return (
     <>
       <PageHeader
-        title="Dashboard"
-        description="A summary of your job search, calculated from the applications saved in this browser."
+        title={t('dashboard.title')}
+        description={t('dashboard.description')}
         actions={
           <Link to="/applications">
             <Button variant="primary">
               <Plus className="h-4 w-4" aria-hidden="true" />
-              Add application
+              {t('action.addApplication')}
             </Button>
           </Link>
         }
@@ -61,27 +69,27 @@ export function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Total applications"
+          label={t('dashboard.total')}
           value={metrics.total}
-          definition="Every record saved, whatever its status."
+          definition={t('dashboard.totalDef')}
           icon={Briefcase}
         />
         <StatCard
-          label="Active"
+          label={t('dashboard.active')}
           value={metrics.active}
-          definition="Still in play: Applied, Screening, Interview or Offer."
+          definition={t('dashboard.activeDef')}
           icon={TrendingUp}
         />
         <StatCard
-          label="Upcoming interviews"
+          label={t('dashboard.upcoming')}
           value={metrics.upcomingInterviews}
-          definition="Interviews dated today or later, on applications still in play."
+          definition={t('dashboard.upcomingDef')}
           icon={CalendarClock}
         />
         <StatCard
-          label="Offers"
+          label={t('dashboard.offers')}
           value={metrics.offers}
-          definition="Applications currently at the Offer status."
+          definition={t('dashboard.offersDef')}
           icon={Award}
         />
       </div>

@@ -6,14 +6,17 @@ import { MemoryRouter } from 'react-router-dom';
 import type { ReactElement, ReactNode } from 'react';
 import { AppDataProvider } from '@/state/AppDataProvider';
 import { ThemeProvider } from '@/state/ThemeProvider';
+import { I18nProvider } from '@/i18n/I18nProvider';
 
 function Providers({ children }: { children: ReactNode }) {
   return (
-    <ThemeProvider>
-      <AppDataProvider>
-        <MemoryRouter>{children}</MemoryRouter>
-      </AppDataProvider>
-    </ThemeProvider>
+    <I18nProvider>
+      <ThemeProvider>
+        <AppDataProvider>
+          <MemoryRouter>{children}</MemoryRouter>
+        </AppDataProvider>
+      </ThemeProvider>
+    </I18nProvider>
   );
 }
 

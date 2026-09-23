@@ -12,10 +12,29 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <title>CareerFlow — Job Application Tracker</title>
+    <script>
+      // Apply the stored language before first paint, so an Arabic visitor
+      // never sees the layout render left-to-right and then flip.
+      (function () {
+        try {
+          var stored = localStorage.getItem('careerflow:locale');
+          var locale =
+            stored === 'ar' || stored === 'en'
+              ? stored
+              : (navigator.language || 'en').toLowerCase().indexOf('ar') === 0
+                ? 'ar'
+                : 'en';
+          document.documentElement.lang = locale;
+          document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
+        } catch (e) {
+          /* storage unavailable — the provider sets this again on mount */
+        }
+      })();
+    </script>
     <script>
       // Apply the stored theme before first paint to avoid a flash of the
       // wrong colour scheme. Kept intentionally tiny and dependency-free.

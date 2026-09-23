@@ -1,12 +1,13 @@
 import { Dialog } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
+import { useT } from '@/i18n/i18n-context';
 
 export function ConfirmDialog({
   open,
   title,
   description,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   destructive = false,
   onConfirm,
   onCancel,
@@ -20,6 +21,8 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useT();
+
   return (
     <Dialog
       open={open}
@@ -30,15 +33,15 @@ export function ConfirmDialog({
       footer={
         <>
           <Button variant="secondary" onClick={onCancel}>
-            {cancelLabel}
+            {cancelLabel ?? t('action.cancel')}
           </Button>
           <Button variant={destructive ? 'danger' : 'primary'} onClick={onConfirm}>
-            {confirmLabel}
+            {confirmLabel ?? t('action.confirm')}
           </Button>
         </>
       }
     >
-      <p className="text-sm text-ink-muted">This action cannot be undone.</p>
+      <p className="text-sm text-ink-muted">{t('common.undone')}</p>
     </Dialog>
   );
 }

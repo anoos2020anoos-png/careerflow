@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
 import { Briefcase } from 'lucide-react';
 import type { Application, ApplicationStatus } from '@/types';
-import { APPLICATION_STATUSES, STATUS_LABELS, WORK_ARRANGEMENT_LABELS } from '@/types';
+import { APPLICATION_STATUSES } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusSelect } from '@/features/applications/StatusSelect';
+import { useT } from '@/i18n/i18n-context';
+import { arrangementLabel, plural, statusLabel } from '@/i18n/labels';
 import { STATUS_TONES } from '@/lib/statusStyles';
 import { formatDateOnly } from '@/lib/dates';
-import { pluralize } from '@/lib/format';
 
 /**
  * Applications grouped by status.
@@ -23,13 +24,15 @@ export function KanbanBoard({
   applications: Application[];
   onStatusChange: (id: string, status: ApplicationStatus) => void;
 }) {
+  const t = useT();
+
   if (applications.length === 0) {
     return (
       <div className="cf-card">
         <EmptyState
           icon={Briefcase}
-          title="Nothing to show on the board"
-          description="No applications match the current search and filters."
+          title={t('kanban.emptyTitle')}
+          description={t('kanban.emptyDesc')}
         />
       </div>
     );
@@ -54,17 +57,19 @@ export function KanbanBoard({
                 id={`kanban-${column.status}`}
                 className="flex items-center gap-2 text-sm font-semibold text-ink"
               >
-                <Badge tone={STATUS_TONES[column.status]}>{STATUS_LABELS[column.status]}</Badge>
+                <Badge tone={STATUS_TONES[column.status]}>
+                  {statusLabel(t, column.status)}
+                </Badge>
               </h3>
               <span className="text-xs text-ink-muted">
-                {column.items.length} {pluralize(column.items.length, 'card')}
+                {plural(t, column.items.length, 'kanban.oneCard', 'kanban.cards')}
               </span>
             </header>
 
             <ul className="flex flex-1 flex-col gap-2 p-2">
               {column.items.length === 0 ? (
                 <li className="rounded-lg border border-dashed border-line px-3 py-6 text-center text-xs text-ink-muted">
-                  Empty
+                  {t('common.empty')}
                 </li>
               ) : (
                 column.items.map((application) => (
@@ -78,18 +83,23 @@ export function KanbanBoard({
                     <p className="text-xs text-ink-muted">{application.company}</p>
 
                     <p className="mt-2 flex flex-wrap gap-1">
-                      <Badge>{WORK_ARRANGEMENT_LABELS[application.workArrangement]}</Badge>
+                      <Badge>{arrangementLabel(t, application.workArrangement)}</Badge>
                     </p>
 
                     <p className="mt-2 text-xs text-ink-muted">
-                      Applied {formatDateOnly(application.appliedDate)}
+                      {t('applications.appliedOn', {
+                        date: formatDateOnly(application.appliedDate),
+                      })}
                     </p>
 
                     <div className="mt-2.5 border-t border-line pt-2.5">
                       <StatusSelect
                         value={application.status}
                         onChange={(status) => onStatusChange(application.id, status)}
-                        label={`Move ${application.jobTitle} at ${application.company} to another status`}
+                        label={t('applications.moveAria', {
+                          title: application.jobTitle,
+                          company: application.company,
+                        })}
                         size="sm"
                         className="w-full"
                       />

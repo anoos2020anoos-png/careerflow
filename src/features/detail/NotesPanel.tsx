@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from 'react';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Textarea } from '@/components/ui/Field';
+import { useT } from '@/i18n/i18n-context';
 
 const MAX_LENGTH = 5000;
 
@@ -15,6 +16,7 @@ export function NotesPanel({
   const [draft, setDraft] = useState(notes ?? '');
   const [saved, setSaved] = useState(false);
   const id = useId();
+  const t = useT();
 
   // Keep the draft in step when the record changes underneath (import, reset).
   useEffect(() => {
@@ -25,13 +27,10 @@ export function NotesPanel({
 
   return (
     <Card>
-      <CardHeader
-        title="Notes"
-        description="Stored and displayed as plain text — formatting and HTML are never interpreted."
-      />
+      <CardHeader title={t('notes.title')} description={t('notes.description')} />
       <CardBody className="flex flex-col gap-3">
         <label htmlFor={id} className="sr-only">
-          Notes for this application
+          {t('notes.label')}
         </label>
         <Textarea
           id={id}
@@ -42,15 +41,17 @@ export function NotesPanel({
             setDraft(event.target.value);
             setSaved(false);
           }}
-          placeholder="Contacts, salary expectations, what to prepare…"
+          placeholder={t('notes.placeholder')}
         />
         <div className="flex items-center justify-between gap-3">
           <span className="text-xs text-ink-muted" aria-live="polite">
-            {saved && !dirty ? 'Notes saved.' : `${draft.length} / ${MAX_LENGTH} characters`}
+            {saved && !dirty
+              ? t('notes.saved')
+              : t('notes.counter', { count: draft.length, max: MAX_LENGTH })}
           </span>
           <div className="flex gap-2">
             <Button variant="secondary" disabled={!dirty} onClick={() => setDraft(notes ?? '')}>
-              Discard
+              {t('action.discard')}
             </Button>
             <Button
               variant="primary"
@@ -60,7 +61,7 @@ export function NotesPanel({
                 setSaved(true);
               }}
             >
-              Save notes
+              {t('notes.save')}
             </Button>
           </div>
         </div>

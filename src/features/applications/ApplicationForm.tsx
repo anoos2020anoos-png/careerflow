@@ -2,13 +2,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Field, Input, Select, Textarea } from '@/components/ui/Field';
 import { applicationFormSchema, type ApplicationFormValues } from '@/lib/schemas';
+import { useT } from '@/i18n/i18n-context';
+import { fieldError } from '@/i18n/fieldError';
+import { arrangementLabel, employmentLabel, statusLabel } from '@/i18n/labels';
 import {
   APPLICATION_STATUSES,
   EMPLOYMENT_TYPES,
-  EMPLOYMENT_TYPE_LABELS,
-  STATUS_LABELS,
   WORK_ARRANGEMENTS,
-  WORK_ARRANGEMENT_LABELS,
 } from '@/types';
 
 export interface ApplicationFormProps {
@@ -22,6 +22,7 @@ export interface ApplicationFormProps {
  * Validation lives in `applicationFormSchema`; this component only renders it.
  */
 export function ApplicationForm({ formId, defaultValues, onSubmit }: ApplicationFormProps) {
+  const t = useT();
   const {
     register,
     handleSubmit,
@@ -32,21 +33,23 @@ export function ApplicationForm({ formId, defaultValues, onSubmit }: Application
     mode: 'onBlur',
   });
 
+  const error = (message: string | undefined) => fieldError(t, message);
+
   return (
     <form id={formId} noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Company" required error={errors.company?.message}>
+        <Field label={t('form.company')} required error={error(errors.company?.message)}>
           {(aria) => (
             <Input
               {...aria}
               {...register('company')}
               autoComplete="organization"
-              placeholder="Northwind Analytics"
+              placeholder="Sahaab Cloud"
             />
           )}
         </Field>
 
-        <Field label="Job title" required error={errors.jobTitle?.message}>
+        <Field label={t('form.jobTitle')} required error={error(errors.jobTitle?.message)}>
           {(aria) => (
             <Input
               {...aria}
@@ -59,9 +62,9 @@ export function ApplicationForm({ formId, defaultValues, onSubmit }: Application
       </div>
 
       <Field
-        label="Job posting link"
-        error={errors.jobUrl?.message}
-        hint="Optional. Must start with http:// or https://."
+        label={t('form.jobUrl')}
+        error={error(errors.jobUrl?.message)}
+        hint={t('form.jobUrlHint')}
       >
         {(aria) => (
           <Input
@@ -69,34 +72,43 @@ export function ApplicationForm({ formId, defaultValues, onSubmit }: Application
             {...register('jobUrl')}
             type="url"
             inputMode="url"
+            dir="ltr"
             placeholder="https://example.com/jobs/123"
           />
         )}
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Location" error={errors.location?.message}>
-          {(aria) => <Input {...aria} {...register('location')} placeholder="Berlin, Germany" />}
+        <Field label={t('form.location')} error={error(errors.location?.message)}>
+          {(aria) => <Input {...aria} {...register('location')} placeholder="Riyadh" />}
         </Field>
 
-        <Field label="Work arrangement" required error={errors.workArrangement?.message}>
+        <Field
+          label={t('form.arrangement')}
+          required
+          error={error(errors.workArrangement?.message)}
+        >
           {(aria) => (
             <Select {...aria} {...register('workArrangement')}>
               {WORK_ARRANGEMENTS.map((value) => (
                 <option key={value} value={value}>
-                  {WORK_ARRANGEMENT_LABELS[value]}
+                  {arrangementLabel(t, value)}
                 </option>
               ))}
             </Select>
           )}
         </Field>
 
-        <Field label="Employment type" required error={errors.employmentType?.message}>
+        <Field
+          label={t('form.employment')}
+          required
+          error={error(errors.employmentType?.message)}
+        >
           {(aria) => (
             <Select {...aria} {...register('employmentType')}>
               {EMPLOYMENT_TYPES.map((value) => (
                 <option key={value} value={value}>
-                  {EMPLOYMENT_TYPE_LABELS[value]}
+                  {employmentLabel(t, value)}
                 </option>
               ))}
             </Select>
@@ -105,27 +117,44 @@ export function ApplicationForm({ formId, defaultValues, onSubmit }: Application
       </div>
 
       <fieldset className="grid gap-4 sm:grid-cols-3">
-        <legend className="mb-2 text-sm font-medium text-ink">Salary range (optional)</legend>
+        <legend className="mb-2 text-sm font-medium text-ink">{t('form.salaryLegend')}</legend>
 
-        <Field label="Minimum" error={errors.salaryMin?.message}>
+        <Field label={t('form.salaryMin')} error={error(errors.salaryMin?.message)}>
           {(aria) => (
-            <Input {...aria} {...register('salaryMin')} inputMode="decimal" placeholder="65000" />
+            <Input
+              {...aria}
+              {...register('salaryMin')}
+              inputMode="decimal"
+              dir="ltr"
+              placeholder="18000"
+            />
           )}
         </Field>
 
-        <Field label="Maximum" error={errors.salaryMax?.message}>
+        <Field label={t('form.salaryMax')} error={error(errors.salaryMax?.message)}>
           {(aria) => (
-            <Input {...aria} {...register('salaryMax')} inputMode="decimal" placeholder="80000" />
+            <Input
+              {...aria}
+              {...register('salaryMax')}
+              inputMode="decimal"
+              dir="ltr"
+              placeholder="24000"
+            />
           )}
         </Field>
 
-        <Field label="Currency" error={errors.salaryCurrency?.message} hint="3-letter code">
+        <Field
+          label={t('form.currency')}
+          error={error(errors.salaryCurrency?.message)}
+          hint={t('form.currencyHint')}
+        >
           {(aria) => (
             <Input
               {...aria}
               {...register('salaryCurrency')}
               maxLength={3}
-              placeholder="EUR"
+              dir="ltr"
+              placeholder="SAR"
               className="uppercase"
             />
           )}
@@ -133,16 +162,16 @@ export function ApplicationForm({ formId, defaultValues, onSubmit }: Application
       </fieldset>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Application date" required error={errors.appliedDate?.message}>
-          {(aria) => <Input {...aria} {...register('appliedDate')} type="date" />}
+        <Field label={t('form.appliedDate')} required error={error(errors.appliedDate?.message)}>
+          {(aria) => <Input {...aria} {...register('appliedDate')} type="date" dir="ltr" />}
         </Field>
 
-        <Field label="Status" required error={errors.status?.message}>
+        <Field label={t('form.status')} required error={error(errors.status?.message)}>
           {(aria) => (
             <Select {...aria} {...register('status')}>
               {APPLICATION_STATUSES.map((value) => (
                 <option key={value} value={value}>
-                  {STATUS_LABELS[value]}
+                  {statusLabel(t, value)}
                 </option>
               ))}
             </Select>
@@ -150,32 +179,28 @@ export function ApplicationForm({ formId, defaultValues, onSubmit }: Application
         </Field>
 
         <Field
-          label="Next follow-up"
-          error={errors.nextFollowUpDate?.message}
-          hint="Optional reminder date"
+          label={t('form.followUp')}
+          error={error(errors.nextFollowUpDate?.message)}
+          hint={t('form.followUpHint')}
         >
-          {(aria) => <Input {...aria} {...register('nextFollowUpDate')} type="date" />}
+          {(aria) => <Input {...aria} {...register('nextFollowUpDate')} type="date" dir="ltr" />}
         </Field>
       </div>
 
-      <Field
-        label="Notes"
-        error={errors.notes?.message}
-        hint="Plain text. Contacts, salary expectations, anything worth remembering."
-      >
+      <Field label={t('form.notes')} error={error(errors.notes?.message)} hint={t('form.notesHint')}>
         {(aria) => (
           <Textarea
             {...aria}
             {...register('notes')}
             rows={4}
-            placeholder="Recruiter mentioned a two-stage process…"
+            placeholder={t('form.notesPlaceholder')}
           />
         )}
       </Field>
 
       {/* Allows Enter-to-submit from any text input without a visible button. */}
       <button type="submit" className="sr-only" disabled={isSubmitting}>
-        Save application
+        {t('form.submitSr')}
       </button>
     </form>
   );

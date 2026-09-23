@@ -8,6 +8,7 @@ import { ApplicationFormDialog } from '@/features/applications/ApplicationFormDi
 import { FiltersBar } from '@/features/applications/FiltersBar';
 import { KanbanBoard } from '@/features/applications/KanbanBoard';
 import { useAppData } from '@/state/app-data-context';
+import { useT } from '@/i18n/i18n-context';
 import { DEFAULT_FILTERS, filterAndSortApplications, type FilterState } from '@/lib/filters';
 import { emptyFormValues, toFormValues } from '@/lib/applications';
 import { todayDateOnly } from '@/lib/dates';
@@ -20,6 +21,7 @@ type ViewMode = 'table' | 'kanban';
 export function ApplicationsPage() {
   const { applications, addApplication, editApplication, removeApplication, setStatus } =
     useAppData();
+  const t = useT();
 
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [view, setView] = useState<ViewMode>('table');
@@ -52,19 +54,19 @@ export function ApplicationsPage() {
   return (
     <>
       <PageHeader
-        title="Applications"
-        description="Every role you are tracking. Search, filter and sort the list, or switch to the board to see progress by stage."
+        title={t('applications.title')}
+        description={t('applications.description')}
         actions={
           <>
             <div
               className="inline-flex rounded-lg border border-line bg-surface p-0.5"
               role="group"
-              aria-label="View"
+              aria-label={t('applications.view')}
             >
               {(
                 [
-                  { id: 'table', label: 'Table', icon: Table2 },
-                  { id: 'kanban', label: 'Board', icon: KanbanSquare },
+                  { id: 'table', label: t('applications.viewTable'), icon: Table2 },
+                  { id: 'kanban', label: t('applications.viewBoard'), icon: KanbanSquare },
                 ] as const
               ).map((option) => (
                 <button
@@ -87,7 +89,7 @@ export function ApplicationsPage() {
 
             <Button variant="primary" onClick={() => setCreating(true)}>
               <Plus className="h-4 w-4" aria-hidden="true" />
-              Add application
+              {t('action.addApplication')}
             </Button>
           </>
         }
@@ -107,18 +109,20 @@ export function ApplicationsPage() {
           onEdit={setEditing}
           onDelete={setPendingDelete}
           emptyTitle={
-            applications.length === 0 ? 'No applications yet' : 'No applications match your filters'
+            applications.length === 0
+              ? t('applications.emptyTitle')
+              : t('applications.emptyFiltered')
           }
           emptyDescription={
             applications.length === 0
-              ? 'Add the first role you are tracking, or restore the sample data from Settings.'
-              : 'Try a different search term, or clear the filters to see everything again.'
+              ? t('applications.emptyDesc')
+              : t('applications.emptyFilteredDesc')
           }
           emptyAction={
             applications.length === 0 ? (
               <Button variant="primary" onClick={() => setCreating(true)}>
                 <Plus className="h-4 w-4" aria-hidden="true" />
-                Add application
+                {t('action.addApplication')}
               </Button>
             ) : undefined
           }
@@ -145,13 +149,16 @@ export function ApplicationsPage() {
 
       <ConfirmDialog
         open={pendingDelete !== null}
-        title="Delete this application?"
+        title={t('applications.deleteTitle')}
         description={
           pendingDelete
-            ? `${pendingDelete.jobTitle} at ${pendingDelete.company}, along with its interviews, follow-ups and timeline.`
+            ? t('applications.deleteDesc', {
+                title: pendingDelete.jobTitle,
+                company: pendingDelete.company,
+              })
             : ''
         }
-        confirmLabel="Delete"
+        confirmLabel={t('action.delete')}
         destructive
         onConfirm={confirmDelete}
         onCancel={() => setPendingDelete(null)}

@@ -9,12 +9,6 @@ export const SORT_KEYS = ['appliedDate', 'company', 'updatedAt'] as const;
 export type SortKey = (typeof SORT_KEYS)[number];
 export type SortDirection = 'asc' | 'desc';
 
-export const SORT_LABELS: Record<SortKey, string> = {
-  appliedDate: 'Application date',
-  company: 'Company',
-  updatedAt: 'Last updated',
-};
-
 export interface FilterState {
   search: string;
   statuses: ApplicationStatus[];

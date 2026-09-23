@@ -15,11 +15,12 @@ import { TasksPanel } from '@/features/detail/TasksPanel';
 import { TimelinePanel } from '@/features/detail/TimelinePanel';
 import { NotesPanel } from '@/features/detail/NotesPanel';
 import { useAppData } from '@/state/app-data-context';
+import { useT } from '@/i18n/i18n-context';
+import { arrangementLabel, employmentLabel, relativeDay, salaryLabels } from '@/i18n/labels';
 import { emptyFormValues, toFormValues } from '@/lib/applications';
-import { describeRelativeDay, formatDateOnly, formatInstant, todayDateOnly } from '@/lib/dates';
+import { formatDateOnly, formatInstant, todayDateOnly } from '@/lib/dates';
 import { formatSalaryRange } from '@/lib/format';
 import { describeUrl } from '@/lib/urls';
-import { EMPLOYMENT_TYPE_LABELS, WORK_ARRANGEMENT_LABELS } from '@/types';
 
 function DetailRow({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -46,6 +47,7 @@ export function ApplicationDetailPage() {
     removeTask,
   } = useAppData();
 
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
@@ -56,11 +58,11 @@ export function ApplicationDetailPage() {
       <div className="cf-card">
         <EmptyState
           icon={Briefcase}
-          title="Application not found"
-          description="It may have been deleted, or the link points at a record that is not in this browser."
+          title={t('detail.notFound')}
+          description={t('detail.notFoundDesc')}
           action={
             <Button variant="primary" onClick={() => navigate('/applications')}>
-              Back to applications
+              {t('detail.backButton')}
             </Button>
           }
         />
@@ -72,6 +74,7 @@ export function ApplicationDetailPage() {
     application.salaryMin,
     application.salaryMax,
     application.salaryCurrency,
+    salaryLabels(t),
   );
   const today = todayDateOnly();
 
@@ -82,7 +85,7 @@ export function ApplicationDetailPage() {
         className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        All applications
+        {t('detail.back')}
       </Link>
 
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -103,11 +106,14 @@ export function ApplicationDetailPage() {
           <StatusSelect
             value={application.status}
             onChange={(status) => setStatus(application.id, status)}
-            label={`Status for ${application.jobTitle} at ${application.company}`}
+            label={t('applications.statusAria', {
+              title: application.jobTitle,
+              company: application.company,
+            })}
           />
           <Button onClick={() => setEditing(true)}>
             <Pencil className="h-4 w-4" aria-hidden="true" />
-            Edit
+            {t('action.edit')}
           </Button>
           <Button
             variant="secondary"
@@ -115,7 +121,7 @@ export function ApplicationDetailPage() {
             className="text-danger hover:bg-danger-soft"
           >
             <Trash2 className="h-4 w-4" aria-hidden="true" />
-            Delete
+            {t('action.delete')}
           </Button>
         </div>
       </div>
@@ -123,54 +129,54 @@ export function ApplicationDetailPage() {
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="flex flex-col gap-5 lg:col-span-2">
           <Card>
-            <CardHeader title="Role details" />
+            <CardHeader title={t('detail.roleDetails')} />
             <CardBody>
               <dl className="divide-y divide-line sm:divide-y-0">
-                <DetailRow label="Company">{application.company}</DetailRow>
-                <DetailRow label="Job title">{application.jobTitle}</DetailRow>
-                <DetailRow label="Location">
+                <DetailRow label={t('form.company')}>{application.company}</DetailRow>
+                <DetailRow label={t('form.jobTitle')}>{application.jobTitle}</DetailRow>
+                <DetailRow label={t('form.location')}>
                   {application.location ? (
                     <span className="inline-flex items-center gap-1.5">
                       <MapPin className="h-3.5 w-3.5 text-ink-muted" aria-hidden="true" />
                       {application.location}
                     </span>
                   ) : (
-                    '—'
+                    t('common.none')
                   )}
                 </DetailRow>
-                <DetailRow label="Arrangement">
+                <DetailRow label={t('detail.arrangement')}>
                   <span className="flex flex-wrap gap-1.5">
-                    <Badge>{WORK_ARRANGEMENT_LABELS[application.workArrangement]}</Badge>
-                    <Badge>{EMPLOYMENT_TYPE_LABELS[application.employmentType]}</Badge>
+                    <Badge>{arrangementLabel(t, application.workArrangement)}</Badge>
+                    <Badge>{employmentLabel(t, application.employmentType)}</Badge>
                   </span>
                 </DetailRow>
-                <DetailRow label="Salary range">{salary ?? 'Not recorded'}</DetailRow>
-                <DetailRow label="Job posting">
+                <DetailRow label={t('detail.salary')}>{salary ?? t('common.notRecorded')}</DetailRow>
+                <DetailRow label={t('detail.posting')}>
                   {application.jobUrl ? (
                     <ExternalLink href={application.jobUrl}>
                       {describeUrl(application.jobUrl)}
                     </ExternalLink>
                   ) : (
-                    '—'
+                    t('common.none')
                   )}
                 </DetailRow>
-                <DetailRow label="Application date">
+                <DetailRow label={t('form.appliedDate')}>
                   {formatDateOnly(application.appliedDate)}
                 </DetailRow>
-                <DetailRow label="Next follow-up">
+                <DetailRow label={t('form.followUp')}>
                   {application.nextFollowUpDate ? (
                     <span className="inline-flex items-center gap-1.5">
                       <CalendarDays className="h-3.5 w-3.5 text-ink-muted" aria-hidden="true" />
                       {formatDateOnly(application.nextFollowUpDate)}
                       <span className="text-ink-muted">
-                        ({describeRelativeDay(application.nextFollowUpDate, today)})
+                        ({relativeDay(t, application.nextFollowUpDate, today)})
                       </span>
                     </span>
                   ) : (
-                    '—'
+                    t('common.none')
                   )}
                 </DetailRow>
-                <DetailRow label="Last updated">{formatInstant(application.updatedAt)}</DetailRow>
+                <DetailRow label={t('detail.updated')}>{formatInstant(application.updatedAt)}</DetailRow>
               </dl>
             </CardBody>
           </Card>
@@ -211,9 +217,12 @@ export function ApplicationDetailPage() {
 
       <ConfirmDialog
         open={confirmingDelete}
-        title="Delete this application?"
-        description={`${application.jobTitle} at ${application.company}, along with its interviews, follow-ups and timeline.`}
-        confirmLabel="Delete"
+        title={t('applications.deleteTitle')}
+        description={t('applications.deleteDesc', {
+          title: application.jobTitle,
+          company: application.company,
+        })}
+        confirmLabel={t('action.delete')}
         destructive
         onConfirm={() => {
           removeApplication(application.id);

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useT } from '@/i18n/i18n-context';
 import { cn } from '@/lib/cn';
 
 const FOCUSABLE =
@@ -33,6 +34,7 @@ export function Dialog({
   size = 'md',
   closeOnBackdrop = true,
 }: DialogProps) {
+  const t = useT();
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
   const titleId = useId();
@@ -143,7 +145,7 @@ export function Dialog({
             className="-me-1 -mt-1 rounded-lg p-2 text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
           >
             <X className="h-4 w-4" aria-hidden="true" />
-            <span className="sr-only">Close dialog</span>
+            <span className="sr-only">{t('action.closeDialog')}</span>
           </button>
         </div>
 

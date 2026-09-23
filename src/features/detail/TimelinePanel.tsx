@@ -1,44 +1,55 @@
 import { Card, CardHeader } from '@/components/ui/Card';
+import { useT } from '@/i18n/i18n-context';
+import { statusLabel } from '@/i18n/labels';
+import type { Translate } from '@/i18n/i18n-context';
+import { EDIT_DETAILS, EDIT_NOTES } from '@/lib/applications';
 import { formatInstant } from '@/lib/dates';
-import { STATUS_LABELS, type ActivityEntry } from '@/types';
+import type { ActivityEntry } from '@/types';
 
-function describe(entry: ActivityEntry): string {
+function describe(t: Translate, entry: ActivityEntry): string {
+  const detail = entry.detail;
+
   switch (entry.kind) {
     case 'created':
-      return 'Application added';
+      return t('timeline.created');
     case 'status_changed':
-      return `Status changed${entry.from ? ` from ${STATUS_LABELS[entry.from]}` : ''}${
-        entry.to ? ` to ${STATUS_LABELS[entry.to]}` : ''
-      }`;
+      if (entry.from && entry.to) {
+        return t('timeline.statusFromTo', {
+          from: statusLabel(t, entry.from),
+          to: statusLabel(t, entry.to),
+        });
+      }
+      return entry.to ? t('timeline.statusTo', { to: statusLabel(t, entry.to) }) : t('timeline.updated');
     case 'updated':
-      return entry.detail ?? 'Details updated';
+      if (detail === EDIT_DETAILS) return t('timeline.detailsEdited');
+      if (detail === EDIT_NOTES) return t('timeline.notesEdited');
+      // Written by an earlier version, which stored finished English text.
+      return detail ?? t('timeline.updated');
     case 'interview_added':
-      return `Interview scheduled${entry.detail ? ` for ${entry.detail}` : ''}`;
+      return detail ? t('timeline.interviewAdded', { detail }) : t('timeline.updated');
     case 'interview_removed':
-      return `Interview removed${entry.detail ? ` (${entry.detail})` : ''}`;
+      return detail ? t('timeline.interviewRemoved', { detail }) : t('timeline.updated');
     case 'task_added':
-      return `Follow-up added${entry.detail ? `: ${entry.detail}` : ''}`;
+      return detail ? t('timeline.taskAdded', { detail }) : t('timeline.updated');
     case 'task_completed':
-      return `Follow-up completed${entry.detail ? `: ${entry.detail}` : ''}`;
+      return detail ? t('timeline.taskCompleted', { detail }) : t('timeline.updated');
     case 'task_reopened':
-      return `Follow-up reopened${entry.detail ? `: ${entry.detail}` : ''}`;
+      return detail ? t('timeline.taskReopened', { detail }) : t('timeline.updated');
     case 'task_removed':
-      return `Follow-up removed${entry.detail ? `: ${entry.detail}` : ''}`;
+      return detail ? t('timeline.taskRemoved', { detail }) : t('timeline.updated');
     default:
-      return 'Updated';
+      return t('timeline.updated');
   }
 }
 
 export function TimelinePanel({ activity }: { activity: ActivityEntry[] }) {
+  const t = useT();
   // Newest first, without mutating the stored order.
   const entries = [...activity].sort((a, b) => b.at.localeCompare(a.at));
 
   return (
     <Card>
-      <CardHeader
-        title="Activity"
-        description="Everything CareerFlow has recorded for this application."
-      />
+      <CardHeader title={t('timeline.title')} description={t('timeline.description')} />
       <ol className="flex flex-col gap-0 px-5 py-4">
         {entries.map((entry, index) => (
           <li key={entry.id} className="flex gap-3">
@@ -52,7 +63,7 @@ export function TimelinePanel({ activity }: { activity: ActivityEntry[] }) {
               ) : null}
             </div>
             <div className="min-w-0 flex-1 pb-4 last:pb-0">
-              <p className="break-words text-sm text-ink">{describe(entry)}</p>
+              <p className="break-words text-sm text-ink">{describe(t, entry)}</p>
               <p className="text-xs text-ink-muted">{formatInstant(entry.at)}</p>
             </div>
           </li>

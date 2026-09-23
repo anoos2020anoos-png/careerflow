@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { Dialog } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
 import { ApplicationForm } from '@/features/applications/ApplicationForm';
+import { useT } from '@/i18n/i18n-context';
 import type { ApplicationFormValues } from '@/lib/schemas';
 
 export function ApplicationFormDialog({
@@ -18,6 +19,8 @@ export function ApplicationFormDialog({
   onClose: () => void;
 }) {
   const formId = useId();
+  const t = useT();
+  const creating = mode === 'create';
 
   return (
     <Dialog
@@ -25,19 +28,15 @@ export function ApplicationFormDialog({
       onClose={onClose}
       size="lg"
       closeOnBackdrop={false}
-      title={mode === 'create' ? 'Add application' : 'Edit application'}
-      description={
-        mode === 'create'
-          ? 'Track a role you have applied for or want to apply for.'
-          : 'Update the details of this application.'
-      }
+      title={creating ? t('form.createTitle') : t('form.editTitle')}
+      description={creating ? t('form.createDesc') : t('form.editDesc')}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
-            Cancel
+            {t('action.cancel')}
           </Button>
           <Button variant="primary" type="submit" form={formId}>
-            {mode === 'create' ? 'Add application' : 'Save changes'}
+            {creating ? t('action.addApplication') : t('action.saveChanges')}
           </Button>
         </>
       }

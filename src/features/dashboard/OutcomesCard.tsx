@@ -1,19 +1,22 @@
 import { Activity, Clock, Info } from 'lucide-react';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useT } from '@/i18n/i18n-context';
+import { plural } from '@/i18n/labels';
 import { rate, USEFUL_SAMPLE_SIZE, type OutcomeStats } from '@/lib/outcomes';
-import { pluralize } from '@/lib/format';
 
 function Row({
   label,
   count,
   total,
   definition,
+  countLabel,
 }: {
   label: string;
   count: number;
   total: number;
   definition: string;
+  countLabel: string;
 }) {
   const percentage = rate(count, total);
   const width = percentage ?? 0;
@@ -23,9 +26,7 @@ function Row({
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <span className="text-sm font-medium text-ink">{label}</span>
         <span className="text-sm tabular-nums text-ink-muted">
-          <strong className="font-semibold text-ink">
-            {count} of {total}
-          </strong>
+          <strong className="font-semibold text-ink">{countLabel}</strong>
           {percentage === null ? null : <span className="ms-2">{percentage}%</span>}
         </span>
       </div>
@@ -49,73 +50,78 @@ function Row({
  * applications.
  */
 export function OutcomesCard({ stats }: { stats: OutcomeStats }) {
+  const t = useT();
+
   if (stats.submitted === 0) {
     return (
       <Card>
-        <CardHeader
-          title="Your track record"
-          description="Counted from applications you have actually sent."
-        />
+        <CardHeader title={t('outcomes.title')} description={t('outcomes.emptyDesc')} />
         <EmptyState
           icon={Activity}
-          title="Nothing sent yet"
-          description="Once you move an application past Saved, this card starts counting replies, interviews and offers from your own history."
+          title={t('outcomes.emptyTitle')}
+          description={t('outcomes.emptyBody')}
         />
       </Card>
     );
   }
 
+  const ofTotal = (count: number) =>
+    t('outcomes.ofTotal', { count, total: stats.submitted });
+
   return (
     <Card>
       <CardHeader
-        title="Your track record"
-        description={`Counted from the ${stats.submitted} ${pluralize(
-          stats.submitted,
-          'application',
-        )} you have actually sent. These are your own past results, not a prediction about any particular role.`}
+        title={t('outcomes.title')}
+        description={t('outcomes.description', { count: stats.submitted })}
       />
 
       <CardBody className="flex flex-col gap-5">
         <Row
-          label="Got a reply"
+          label={t('outcomes.replied')}
           count={stats.responded}
           total={stats.submitted}
-          definition="Reached Screening, Interview, Offer or Rejected. A rejection is still a reply."
+          countLabel={ofTotal(stats.responded)}
+          definition={t('outcomes.repliedDef')}
         />
         <Row
-          label="Reached an interview"
+          label={t('outcomes.interviewed')}
           count={stats.interviewed}
           total={stats.submitted}
-          definition="Reached Interview or Offer at any point, even if it ended in a rejection later."
+          countLabel={ofTotal(stats.interviewed)}
+          definition={t('outcomes.interviewedDef')}
         />
         <Row
-          label="Reached an offer"
+          label={t('outcomes.offered')}
           count={stats.offered}
           total={stats.submitted}
-          definition="Reached the Offer status at any point."
+          countLabel={ofTotal(stats.offered)}
+          definition={t('outcomes.offeredDef')}
         />
 
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-line pt-4">
           <span className="flex items-center gap-2 text-sm text-ink-muted">
             <Clock className="h-4 w-4" aria-hidden="true" />
             {stats.medianDaysToFirstResponse === null ? (
-              'No replies yet, so there is no typical wait to report.'
+              t('outcomes.noWait')
             ) : (
               <>
-                Typical wait for a first reply:{' '}
+                {t('outcomes.wait')}{' '}
                 <strong className="font-semibold text-ink">
-                  {stats.medianDaysToFirstResponse}{' '}
-                  {pluralize(stats.medianDaysToFirstResponse, 'day')}
+                  {plural(
+                    t,
+                    stats.medianDaysToFirstResponse,
+                    'outcomes.oneDay',
+                    'outcomes.days',
+                  )}
                 </strong>{' '}
-                <span className="text-ink-muted">(median)</span>
+                <span className="text-ink-muted">{t('outcomes.median')}</span>
               </>
             )}
           </span>
 
           {stats.awaitingResponse > 0 ? (
-            <span className="text-sm text-ink-muted">
-              <strong className="font-semibold text-ink">{stats.awaitingResponse}</strong> still
-              waiting
+            <span className="text-sm font-medium text-ink">
+              {t('outcomes.waiting', { count: stats.awaitingResponse })}
             </span>
           ) : null}
         </div>
@@ -123,10 +129,7 @@ export function OutcomesCard({ stats }: { stats: OutcomeStats }) {
         {stats.hasUsefulSample ? null : (
           <p className="flex items-start gap-2 rounded-lg bg-surface-muted px-3 py-2 text-xs leading-relaxed text-ink-muted">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span>
-              Under {USEFUL_SAMPLE_SIZE} applications, these percentages swing wildly with every
-              new record. The counts are accurate; the rates are not worth reading yet.
-            </span>
+            <span>{t('outcomes.smallSample', { threshold: USEFUL_SAMPLE_SIZE })}</span>
           </p>
         )}
       </CardBody>

@@ -78,7 +78,12 @@ describe('ApplicationsPage — creating', () => {
     await user.type(within(dialog).getByLabelText(/job title/i), 'React Engineer');
     await user.click(within(dialog).getByRole('button', { name: /add application/i }));
 
-    expect(await within(dialog).findByText(/company is required/i)).toBeInTheDocument();
+    // The message sits directly under the Company label and is wired to the
+    // input through aria-describedby, so it does not repeat the field name.
+    const company = within(dialog).getByLabelText(/company/i);
+    await waitFor(() => expect(company).toHaveAttribute('aria-invalid', 'true'));
+    expect(within(dialog).getByText(/^required$/i)).toBeInTheDocument();
+
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText(/showing 2 of 2 applications/i)).toBeInTheDocument();
   });

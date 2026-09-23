@@ -2,6 +2,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { AppDataProvider } from '@/state/AppDataProvider';
 import { ThemeProvider } from '@/state/ThemeProvider';
+import { I18nProvider } from '@/i18n/I18nProvider';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { ApplicationsPage } from '@/pages/ApplicationsPage';
 import { ApplicationDetailPage } from '@/pages/ApplicationDetailPage';
@@ -15,20 +16,22 @@ import { SettingsPage } from '@/pages/SettingsPage';
  */
 export default function App() {
   return (
-    <ThemeProvider>
-      <AppDataProvider>
-        <HashRouter>
-          <Routes>
-            <Route element={<AppShell />}>
-              <Route index element={<DashboardPage />} />
-              <Route path="applications" element={<ApplicationsPage />} />
-              <Route path="applications/:applicationId" element={<ApplicationDetailPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Route>
-          </Routes>
-        </HashRouter>
-      </AppDataProvider>
-    </ThemeProvider>
+    <I18nProvider>
+      <ThemeProvider>
+        <AppDataProvider>
+          <HashRouter>
+            <Routes>
+              <Route element={<AppShell />}>
+                <Route index element={<DashboardPage />} />
+                <Route path="applications" element={<ApplicationsPage />} />
+                <Route path="applications/:applicationId" element={<ApplicationDetailPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Route>
+            </Routes>
+          </HashRouter>
+        </AppDataProvider>
+      </ThemeProvider>
+    </I18nProvider>
   );
 }

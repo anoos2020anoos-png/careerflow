@@ -1,5 +1,6 @@
 import { ExternalLink as ExternalLinkIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useT } from '@/i18n/i18n-context';
 import { cn } from '@/lib/cn';
 import { isSafeHttpUrl } from '@/lib/urls';
 
@@ -14,6 +15,8 @@ export function ExternalLink({
   className?: string;
   showIcon?: boolean;
 }) {
+  const t = useT();
+
   // Anything that is not an http(s) link renders as inert text, never an anchor.
   if (!isSafeHttpUrl(href)) {
     return <span className={cn('text-ink-muted', className)}>{children}</span>;
@@ -31,7 +34,7 @@ export function ExternalLink({
     >
       {children}
       {showIcon ? <ExternalLinkIcon className="h-3.5 w-3.5" aria-hidden="true" /> : null}
-      <span className="sr-only"> (opens in a new tab)</span>
+      <span className="sr-only">{t('common.newTab')}</span>
     </a>
   );
 }

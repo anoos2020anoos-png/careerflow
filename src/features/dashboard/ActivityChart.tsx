@@ -10,9 +10,10 @@ import {
 import { Card, CardHeader } from '@/components/ui/Card';
 import { useTheme } from '@/state/theme-context';
 import { paletteFor } from '@/features/dashboard/chartTheme';
+import { useI18n } from '@/i18n/i18n-context';
+import { plural } from '@/i18n/labels';
 import type { ActivityBucket } from '@/lib/metrics';
 import { formatDateOnly } from '@/lib/dates';
-import { pluralize } from '@/lib/format';
 
 /**
  * Applications submitted per week over the last 12 weeks.
@@ -22,19 +23,26 @@ import { pluralize } from '@/lib/format';
  */
 export function ActivityChart({ data }: { data: ActivityBucket[] }) {
   const { resolved } = useTheme();
+  const { t, dir } = useI18n();
   const palette = paletteFor(resolved);
   const total = data.reduce((sum, bucket) => sum + bucket.count, 0);
 
   return (
     <Card>
       <CardHeader
-        title="Application activity"
-        description={`Applications by the week they were submitted, over the last 12 weeks. ${total} in total.`}
+        title={t('chart.activity')}
+        description={t('chart.activityDesc', { total })}
       />
       <div className="px-2 py-4">
         <div className="cf-chart h-56 w-full" aria-hidden="true">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -18 }}>
+            <BarChart
+              data={data}
+              margin={{ top: 8, right: 12, bottom: 0, left: -18 }}
+              /* Recharts has no logical properties: in Arabic the categories run
+                 right to left and the value axis moves to the right. */
+              reverseStackOrder={dir === 'rtl'}
+            >
               <CartesianGrid vertical={false} stroke={palette.grid} strokeDasharray="3 3" />
               <XAxis
                 dataKey="label"
@@ -43,6 +51,7 @@ export function ActivityChart({ data }: { data: ActivityBucket[] }) {
                 interval="preserveStartEnd"
                 minTickGap={16}
                 stroke={palette.axis}
+                reversed={dir === 'rtl'}
               />
               <YAxis
                 allowDecimals={false}
@@ -50,6 +59,7 @@ export function ActivityChart({ data }: { data: ActivityBucket[] }) {
                 axisLine={false}
                 width={44}
                 stroke={palette.axis}
+                orientation={dir === 'rtl' ? 'right' : 'left'}
               />
               <Tooltip
                 cursor={{ fill: palette.grid, fillOpacity: 0.35 }}
@@ -60,10 +70,10 @@ export function ActivityChart({ data }: { data: ActivityBucket[] }) {
                   color: palette.tooltipInk,
                   fontSize: '0.8125rem',
                 }}
-                labelFormatter={(label) => `Week of ${label}`}
+                labelFormatter={(label) => t('chart.weekOf', { label: String(label) })}
                 formatter={(value: number) => [
-                  `${value} ${pluralize(value, 'application')}`,
-                  'Submitted',
+                  plural(t, value, 'chart.oneApplication', 'chart.nApplications'),
+                  t('chart.submitted'),
                 ]}
               />
               <Bar
@@ -71,7 +81,7 @@ export function ActivityChart({ data }: { data: ActivityBucket[] }) {
                 fill={palette.series}
                 radius={[4, 4, 0, 0]}
                 maxBarSize={22}
-                name="Applications"
+                name={t("nav.applications")}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -79,11 +89,11 @@ export function ActivityChart({ data }: { data: ActivityBucket[] }) {
       </div>
 
       <table className="sr-only">
-        <caption>Applications submitted per week over the last 12 weeks</caption>
+        <caption>{t('chart.activityCaption')}</caption>
         <thead>
           <tr>
-            <th scope="col">Week beginning</th>
-            <th scope="col">Applications submitted</th>
+            <th scope="col">{t('chart.weekBeginning')}</th>
+            <th scope="col">{t('chart.submittedHeader')}</th>
           </tr>
         </thead>
         <tbody>

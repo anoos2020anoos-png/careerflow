@@ -7,6 +7,8 @@
  * offset. Everything here builds local-midnight `Date` objects explicitly.
  */
 
+import { getFormatLocale } from '@/lib/locale';
+
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -61,7 +63,7 @@ export function differenceInDays(from: string, to: string): number {
 
 export function formatDateOnly(value: string | undefined): string {
   if (!value || !isValidDateOnly(value)) return '—';
-  return parseDateOnly(value).toLocaleDateString(undefined, {
+  return parseDateOnly(value).toLocaleDateString(getFormatLocale(), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -69,7 +71,7 @@ export function formatDateOnly(value: string | undefined): string {
 }
 
 export function formatDateOnlyShort(value: string): string {
-  return parseDateOnly(value).toLocaleDateString(undefined, {
+  return parseDateOnly(value).toLocaleDateString(getFormatLocale(), {
     day: 'numeric',
     month: 'short',
   });
@@ -79,7 +81,7 @@ export function formatDateOnlyShort(value: string): string {
 export function formatInstant(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleString(undefined, {
+  return date.toLocaleString(getFormatLocale(), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -93,24 +95,14 @@ export function formatTime(time: string): string {
   if (!isValidTime(time)) return '—';
   const [hours, minutes] = time.split(':').map(Number);
   const probe = new Date(2000, 0, 1, hours ?? 0, minutes ?? 0);
-  return probe.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-}
-
-/** "Today", "Tomorrow", "in 4 days", "3 days ago" — relative to local today. */
-export function describeRelativeDay(value: string, today = todayDateOnly()): string {
-  const delta = differenceInDays(today, value);
-  if (delta === 0) return 'Today';
-  if (delta === 1) return 'Tomorrow';
-  if (delta === -1) return 'Yesterday';
-  if (delta > 1) return `In ${delta} days`;
-  return `${Math.abs(delta)} days ago`;
+  return probe.toLocaleTimeString(getFormatLocale(), { hour: '2-digit', minute: '2-digit' });
 }
 
 /** The IANA timezone the browser is using, shown wherever times are entered. */
-export function localTimeZoneName(): string {
+export function localTimeZoneName(fallback = 'your local time'): string {
   try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'your local time';
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || fallback;
   } catch {
-    return 'your local time';
+    return fallback;
   }
 }

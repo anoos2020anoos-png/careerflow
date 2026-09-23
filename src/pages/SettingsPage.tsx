@@ -17,11 +17,14 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useAppData } from '@/state/app-data-context';
 import { useTheme } from '@/state/theme-context';
 import type { ThemeMode } from '@/state/theme-context';
+import { useI18n } from '@/i18n/i18n-context';
+import { plural } from '@/i18n/labels';
+import { LOCALES, LOCALE_NAMES, type Locale } from '@/i18n/messages';
+import type { MessageKey } from '@/i18n/messages';
 import { downloadJson, exportFileName, parseImport, serializeExport } from '@/lib/transfer';
 import { DEMO_APPLICATION_COUNT } from '@/lib/demoData';
 import { DATA_VERSION } from '@/lib/schemas';
 import { STORAGE_KEY } from '@/lib/storage';
-import { pluralize } from '@/lib/format';
 import type { Application } from '@/types';
 import { cn } from '@/lib/cn';
 
@@ -30,15 +33,48 @@ type ImportFeedback =
   | { kind: 'error'; message: string; details: string[] }
   | { kind: 'success'; message: string };
 
-const THEME_OPTIONS: { value: ThemeMode; label: string; icon: typeof Sun }[] = [
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'dark', label: 'Dark', icon: Moon },
-  { value: 'system', label: 'System', icon: Monitor },
+const THEME_OPTIONS: { value: ThemeMode; labelKey: MessageKey; icon: typeof Sun }[] = [
+  { value: 'light', labelKey: 'settings.light', icon: Sun },
+  { value: 'dark', labelKey: 'settings.dark', icon: Moon },
+  { value: 'system', labelKey: 'settings.system', icon: Monitor },
 ];
+
+/** The shared look of the theme and language choosers. */
+function ChoiceButton({
+  selected,
+  onClick,
+  children,
+  lang,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  lang?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      onClick={onClick}
+      lang={lang}
+      className={cn(
+        'inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition-colors',
+        selected
+          ? 'border-brand/30 bg-brand-soft text-brand'
+          : 'border-line bg-surface text-ink-muted hover:bg-surface-muted hover:text-ink',
+      )}
+    >
+      {children}
+      {selected ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : null}
+    </button>
+  );
+}
 
 export function SettingsPage() {
   const { applications, replaceAll, clearAll, resetToDemo } = useAppData();
   const { mode, setMode } = useTheme();
+  const { locale, setLocale, t } = useI18n();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [feedback, setFeedback] = useState<ImportFeedback>({ kind: 'idle' });
@@ -58,8 +94,8 @@ export function SettingsPage() {
     } catch {
       setFeedback({
         kind: 'error',
-        message: 'That file could not be read.',
-        details: ['Try exporting again, or choose a different file.'],
+        message: t('settings.importUnreadable'),
+        details: [t('settings.importUnreadableHint')],
       });
       return;
     }
@@ -80,100 +116,93 @@ export function SettingsPage() {
     setPendingImport(null);
     setFeedback({
       kind: 'success',
-      message: `Imported ${count} ${pluralize(count, 'application')}. Your previous data has been replaced.`,
+      message: plural(t, count, 'settings.importSuccessOne', 'settings.importSuccess'),
     });
   };
 
   return (
     <>
-      <PageHeader
-        title="Settings"
-        description="Appearance, and everything to do with the data CareerFlow keeps in this browser."
-      />
+      <PageHeader title={t('settings.title')} description={t('settings.description')} />
 
       <div className="flex max-w-3xl flex-col gap-5">
         <Card>
-          <CardHeader title="Theme" description="Remembered in this browser." />
+          <CardHeader title={t('settings.language')} description={t('settings.languageDesc')} />
           <CardBody>
             <div
               className="inline-flex flex-wrap gap-2"
               role="radiogroup"
-              aria-label="Colour theme"
+              aria-label={t('settings.languageGroup')}
             >
-              {THEME_OPTIONS.map((option) => {
-                const selected = mode === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    onClick={() => setMode(option.value)}
-                    className={cn(
-                      'inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition-colors',
-                      selected
-                        ? 'border-brand/30 bg-brand-soft text-brand'
-                        : 'border-line bg-surface text-ink-muted hover:bg-surface-muted hover:text-ink',
-                    )}
-                  >
-                    <option.icon className="h-4 w-4" aria-hidden="true" />
-                    {option.label}
-                    {selected ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : null}
-                  </button>
-                );
-              })}
+              {LOCALES.map((option: Locale) => (
+                <ChoiceButton
+                  key={option}
+                  selected={locale === option}
+                  onClick={() => setLocale(option)}
+                  lang={option}
+                >
+                  {LOCALE_NAMES[option]}
+                </ChoiceButton>
+              ))}
             </div>
-            <p className="mt-3 text-sm text-ink-muted">
-              “System” follows your operating system’s light or dark setting and updates when it
-              changes.
-            </p>
           </CardBody>
         </Card>
 
         <Card>
-          <CardHeader
-            title="Where your data lives"
-            description="CareerFlow has no account, no server and no sync."
-          />
+          <CardHeader title={t('settings.theme')} description={t('settings.themeDesc')} />
+          <CardBody>
+            <div
+              className="inline-flex flex-wrap gap-2"
+              role="radiogroup"
+              aria-label={t('settings.themeGroup')}
+            >
+              {THEME_OPTIONS.map((option) => (
+                <ChoiceButton
+                  key={option.value}
+                  selected={mode === option.value}
+                  onClick={() => setMode(option.value)}
+                >
+                  <option.icon className="h-4 w-4" aria-hidden="true" />
+                  {t(option.labelKey)}
+                </ChoiceButton>
+              ))}
+            </div>
+            <p className="mt-3 text-sm text-ink-muted">{t('settings.themeNote')}</p>
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader title={t('settings.storage')} description={t('settings.storageDesc')} />
           <CardBody className="flex flex-col gap-3 text-sm text-ink-muted">
             <p>
-              Everything you enter is stored in this browser’s local storage under the key{' '}
-              <code className="rounded bg-surface-muted px-1.5 py-0.5 text-xs text-ink">
-                {STORAGE_KEY}
-              </code>{' '}
-              (data format version {DATA_VERSION}). Nothing is uploaded anywhere.
+              {t('settings.storageBody1', {
+                key: STORAGE_KEY,
+                version: DATA_VERSION,
+              })}
             </p>
-            <p>
-              That means your applications are <strong className="text-ink">not shared</strong>{' '}
-              between devices or browsers, and clearing your browser’s site data — or using private
-              browsing — will remove them. Export a JSON file before switching machines or clearing
-              your browser.
-            </p>
-            <p>
-              You are currently tracking{' '}
-              <strong className="text-ink">
-                {applications.length} {pluralize(applications.length, 'application')}
-              </strong>
-              .
+            <p>{t('settings.storageBody2')}</p>
+            <p className="font-medium text-ink">
+              {plural(
+                t,
+                applications.length,
+                'settings.storageCountOne',
+                'settings.storageCount',
+              )}
             </p>
           </CardBody>
         </Card>
 
         <Card>
-          <CardHeader
-            title="Export and import"
-            description="A plain JSON file you can back up, move to another browser, or keep in version control."
-          />
+          <CardHeader title={t('settings.transfer')} description={t('settings.transferDesc')} />
           <CardBody className="flex flex-col gap-4">
             <div className="flex flex-wrap gap-2">
               <Button variant="primary" onClick={handleExport} disabled={applications.length === 0}>
                 <Download className="h-4 w-4" aria-hidden="true" />
-                Export JSON
+                {t('settings.export')}
               </Button>
 
               <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
                 <Upload className="h-4 w-4" aria-hidden="true" />
-                Import JSON
+                {t('settings.import')}
               </Button>
 
               <input
@@ -181,7 +210,7 @@ export function SettingsPage() {
                 type="file"
                 accept="application/json,.json"
                 className="sr-only"
-                aria-label="Choose a CareerFlow JSON file to import"
+                aria-label={t('settings.importAria')}
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (file) void handleFile(file);
@@ -191,11 +220,7 @@ export function SettingsPage() {
               />
             </div>
 
-            <p className="text-sm text-ink-muted">
-              Importing <strong className="text-ink">replaces</strong> everything currently stored.
-              You will be asked to confirm first, and an invalid file is rejected without touching
-              your existing data.
-            </p>
+            <p className="text-sm text-ink-muted">{t('settings.importNote')}</p>
 
             {feedback.kind === 'error' ? (
               <div
@@ -229,32 +254,25 @@ export function SettingsPage() {
         </Card>
 
         <Card>
-          <CardHeader
-            title="Reset"
-            description="Both actions are immediate and cannot be undone."
-          />
+          <CardHeader title={t('settings.reset')} description={t('settings.resetDesc')} />
           <CardBody className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-ink">Restore the sample data</p>
+                <p className="text-sm font-medium text-ink">{t('settings.restore')}</p>
                 <p className="text-sm text-ink-muted">
-                  Replaces everything with the {DEMO_APPLICATION_COUNT} fictional applications shown
-                  on a first visit.
+                  {t('settings.restoreDesc', { count: DEMO_APPLICATION_COUNT })}
                 </p>
               </div>
               <Button variant="secondary" onClick={() => setConfirmReset(true)}>
                 <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                Reset to demo data
+                {t('settings.restoreButton')}
               </Button>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-ink">Clear all records</p>
-                <p className="text-sm text-ink-muted">
-                  Removes every application and leaves CareerFlow empty. The sample data is{' '}
-                  <strong className="text-ink">not</strong> restored afterwards.
-                </p>
+                <p className="text-sm font-medium text-ink">{t('settings.clear')}</p>
+                <p className="text-sm text-ink-muted">{t('settings.clearDesc')}</p>
               </div>
               <Button
                 variant="secondary"
@@ -263,7 +281,7 @@ export function SettingsPage() {
                 className="text-danger hover:bg-danger-soft"
               >
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
-                Clear all data
+                {t('settings.clearButton')}
               </Button>
             </div>
           </CardBody>
@@ -272,13 +290,16 @@ export function SettingsPage() {
 
       <ConfirmDialog
         open={pendingImport !== null}
-        title="Replace your data with this file?"
+        title={t('settings.importConfirmTitle')}
         description={
           pendingImport
-            ? `The file contains ${pendingImport.length} ${pluralize(pendingImport.length, 'application')}. Importing replaces the ${applications.length} currently stored in this browser.`
+            ? t('settings.importConfirmDesc', {
+                incoming: pendingImport.length,
+                current: applications.length,
+              })
             : ''
         }
-        confirmLabel="Replace data"
+        confirmLabel={t('settings.importConfirm')}
         destructive
         onConfirm={confirmImport}
         onCancel={() => setPendingImport(null)}
@@ -286,9 +307,14 @@ export function SettingsPage() {
 
       <ConfirmDialog
         open={confirmClear}
-        title="Clear all records?"
-        description={`All ${applications.length} ${pluralize(applications.length, 'application')}, with their interviews, follow-ups and timelines, will be removed from this browser.`}
-        confirmLabel="Clear everything"
+        title={t('settings.clearConfirmTitle')}
+        description={plural(
+          t,
+          applications.length,
+          'settings.clearConfirmDescOne',
+          'settings.clearConfirmDesc',
+        )}
+        confirmLabel={t('settings.clearConfirm')}
         destructive
         onConfirm={() => {
           clearAll();
@@ -300,9 +326,12 @@ export function SettingsPage() {
 
       <ConfirmDialog
         open={confirmReset}
-        title="Restore the sample data?"
-        description={`Your ${applications.length} current ${pluralize(applications.length, 'application')} will be replaced by ${DEMO_APPLICATION_COUNT} fictional examples.`}
-        confirmLabel="Restore sample data"
+        title={t('settings.restoreConfirmTitle')}
+        description={t('settings.restoreConfirmDesc', {
+          count: applications.length,
+          demo: DEMO_APPLICATION_COUNT,
+        })}
+        confirmLabel={t('settings.restoreConfirm')}
         destructive
         onConfirm={() => {
           resetToDemo();

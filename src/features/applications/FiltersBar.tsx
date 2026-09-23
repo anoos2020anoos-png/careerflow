@@ -5,7 +5,6 @@ import { Input, Select } from '@/components/ui/Field';
 import {
   DEFAULT_FILTERS,
   SORT_KEYS,
-  SORT_LABELS,
   hasActiveFilters,
   toggleValue,
   type FilterState,
@@ -14,23 +13,27 @@ import {
 import {
   APPLICATION_STATUSES,
   EMPLOYMENT_TYPES,
-  EMPLOYMENT_TYPE_LABELS,
-  STATUS_LABELS,
   WORK_ARRANGEMENTS,
-  WORK_ARRANGEMENT_LABELS,
 } from '@/types';
+import { useT } from '@/i18n/i18n-context';
+import {
+  arrangementLabel,
+  employmentLabel,
+  sortLabel,
+  statusLabel,
+} from '@/i18n/labels';
 import { cn } from '@/lib/cn';
 
 function CheckboxGroup<T extends string>({
   legend,
   options,
-  labels,
+  label,
   selected,
   onToggle,
 }: {
   legend: string;
   options: readonly T[];
-  labels: Record<T, string>;
+  label: (value: T) => string;
   selected: T[];
   onToggle: (value: T) => void;
 }) {
@@ -58,7 +61,7 @@ function CheckboxGroup<T extends string>({
                 onChange={() => onToggle(option)}
                 className="h-3.5 w-3.5 rounded border-line accent-brand"
               />
-              {labels[option]}
+              {label(option)}
             </label>
           );
         })}
@@ -82,17 +85,19 @@ export function FiltersBar({
   const searchId = useId();
   const panelId = useId();
   const sortId = useId();
+  const t = useT();
 
   const filtersActive = hasActiveFilters(state);
   const activeCount =
     state.statuses.length + state.arrangements.length + state.employmentTypes.length;
+  const ascending = state.sortDirection === 'asc';
 
   return (
     <div className="mb-4 flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-0 flex-1 sm:max-w-xs">
           <label htmlFor={searchId} className="sr-only">
-            Search by company or role
+            {t('filters.searchLabel')}
           </label>
           <Search
             className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
@@ -103,7 +108,7 @@ export function FiltersBar({
             type="search"
             value={state.search}
             onChange={(event) => onChange({ ...state, search: event.target.value })}
-            placeholder="Search company or role"
+            placeholder={t('filters.searchPlaceholder')}
             className="ps-9"
           />
         </div>
@@ -115,7 +120,7 @@ export function FiltersBar({
           aria-controls={panelId}
         >
           <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-          Filters
+          {t('filters.button')}
           {activeCount > 0 ? (
             <span className="ms-1 rounded-full bg-white/25 px-1.5 text-xs">{activeCount}</span>
           ) : null}
@@ -123,7 +128,7 @@ export function FiltersBar({
 
         <div className="flex items-center gap-2">
           <label htmlFor={sortId} className="sr-only">
-            Sort by
+            {t('filters.sortBy')}
           </label>
           <Select
             id={sortId}
@@ -133,7 +138,7 @@ export function FiltersBar({
           >
             {SORT_KEYS.map((key) => (
               <option key={key} value={key}>
-                Sort: {SORT_LABELS[key]}
+                {t('filters.sortAs', { label: sortLabel(t, key) })}
               </option>
             ))}
           </Select>
@@ -143,14 +148,14 @@ export function FiltersBar({
             onClick={() =>
               onChange({
                 ...state,
-                sortDirection: state.sortDirection === 'asc' ? 'desc' : 'asc',
+                sortDirection: ascending ? 'desc' : 'asc',
               })
             }
-            aria-label={`Sort ${state.sortDirection === 'asc' ? 'descending' : 'ascending'}`}
-            title={state.sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+            aria-label={ascending ? t('filters.sortDescAria') : t('filters.sortAscAria')}
+            title={ascending ? t('filters.asc') : t('filters.desc')}
             className="w-10 px-0"
           >
-            {state.sortDirection === 'asc' ? (
+            {ascending ? (
               <ArrowUpAZ className="h-4 w-4" aria-hidden="true" />
             ) : (
               <ArrowDownAZ className="h-4 w-4" aria-hidden="true" />
@@ -162,25 +167,25 @@ export function FiltersBar({
       {expanded ? (
         <div id={panelId} className="cf-card flex flex-col gap-4 p-4">
           <CheckboxGroup
-            legend="Status"
+            legend={t('filters.status')}
             options={APPLICATION_STATUSES}
-            labels={STATUS_LABELS}
+            label={(value) => statusLabel(t, value)}
             selected={state.statuses}
             onToggle={(value) => onChange({ ...state, statuses: toggleValue(state.statuses, value) })}
           />
           <CheckboxGroup
-            legend="Work arrangement"
+            legend={t('filters.arrangement')}
             options={WORK_ARRANGEMENTS}
-            labels={WORK_ARRANGEMENT_LABELS}
+            label={(value) => arrangementLabel(t, value)}
             selected={state.arrangements}
             onToggle={(value) =>
               onChange({ ...state, arrangements: toggleValue(state.arrangements, value) })
             }
           />
           <CheckboxGroup
-            legend="Employment type"
+            legend={t('filters.employment')}
             options={EMPLOYMENT_TYPES}
-            labels={EMPLOYMENT_TYPE_LABELS}
+            label={(value) => employmentLabel(t, value)}
             selected={state.employmentTypes}
             onToggle={(value) =>
               onChange({ ...state, employmentTypes: toggleValue(state.employmentTypes, value) })
@@ -190,7 +195,7 @@ export function FiltersBar({
       ) : null}
 
       <p className="text-sm text-ink-muted" role="status">
-        Showing {resultCount} of {totalCount} applications
+        {t('filters.showing', { shown: resultCount, total: totalCount })}
         {filtersActive ? (
           <>
             {' '}
@@ -206,7 +211,7 @@ export function FiltersBar({
               className="inline-flex items-center gap-1 font-medium text-brand underline-offset-4 hover:underline"
             >
               <X className="h-3.5 w-3.5" aria-hidden="true" />
-              Clear filters
+              {t('filters.clear')}
             </button>
           </>
         ) : null}

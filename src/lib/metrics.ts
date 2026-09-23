@@ -4,18 +4,18 @@ import type {
   FollowUpTask,
   Interview,
 } from '@/types';
-import { ACTIVE_STATUSES, APPLICATION_STATUSES, CLOSED_STATUSES, STATUS_LABELS } from '@/types';
-import { addDays, differenceInDays, parseDateOnly, todayDateOnly } from '@/lib/dates';
+import { ACTIVE_STATUSES, APPLICATION_STATUSES, CLOSED_STATUSES } from '@/types';
+import { addDays, differenceInDays, formatDateOnlyShort, parseDateOnly, todayDateOnly } from '@/lib/dates';
 
 export interface StatusBreakdownEntry {
   status: ApplicationStatus;
-  label: string;
   count: number;
 }
 
 export interface ActivityBucket {
   /** First day of the bucket, `YYYY-MM-DD`. */
   start: string;
+  /** The same day formatted for the active locale, for the chart's axis. */
   label: string;
   count: number;
 }
@@ -76,10 +76,7 @@ export function buildActivityBuckets(
     const start = addDays(currentWeekStart, -index * 7);
     buckets.push({
       start,
-      label: parseDateOnly(start).toLocaleDateString(undefined, {
-        day: 'numeric',
-        month: 'short',
-      }),
+      label: formatDateOnlyShort(start),
       count: 0,
     });
   }
@@ -106,7 +103,6 @@ export function buildStatusBreakdown(applications: Application[]): StatusBreakdo
   }
   return APPLICATION_STATUSES.map((status) => ({
     status,
-    label: STATUS_LABELS[status],
     count: counts.get(status) ?? 0,
   }));
 }

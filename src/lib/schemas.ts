@@ -7,6 +7,7 @@ import {
   WORK_ARRANGEMENTS,
 } from '@/types';
 import { isValidDateOnly, isValidTime } from '@/lib/dates';
+import { issue } from '@/lib/validationKeys';
 
 /**
  * Two families of schema live here.
@@ -20,30 +21,34 @@ import { isValidDateOnly, isValidTime } from '@/lib/dates';
  *
  * 2. **Persistence schemas** validate data coming back out of `localStorage` or
  *    an imported file, where every field is already in its final type.
+ *
+ * Form-schema messages are translation *keys*, not finished sentences — these
+ * schemas run outside React, where no translate function exists. `fieldError`
+ * turns a key back into text when the message is rendered.
  */
 
 /* ================================================================== */
 /* Form schemas                                                        */
 /* ================================================================== */
 
-const requiredText = (label: string, max: number) =>
+const requiredText = (max: number) =>
   z
     .string()
     .trim()
-    .min(1, `${label} is required`)
-    .max(max, `${label} must be ${max} characters or fewer`);
+    .min(1, issue('validation.required'))
+    .max(max, issue('validation.maxLength', max));
 
-const optionalText = (label: string, max: number) =>
-  z.string().trim().max(max, `${label} must be ${max} characters or fewer`);
+const optionalText = (max: number) =>
+  z.string().trim().max(max, issue('validation.maxLength', max));
 
 const requiredDate = z
   .string()
-  .min(1, 'Date is required')
-  .refine(isValidDateOnly, 'Enter a valid date');
+  .min(1, issue('validation.required'))
+  .refine(isValidDateOnly, issue('validation.date'));
 
 const optionalDate = z
   .string()
-  .refine((value) => value === '' || isValidDateOnly(value), 'Enter a valid date');
+  .refine((value) => value === '' || isValidDateOnly(value), issue('validation.date'));
 
 /** Digits, with spaces and commas allowed as thousands separators. */
 const MONEY_PATTERN = /^\d{1,12}(\.\d{1,2})?$/;
@@ -53,11 +58,11 @@ const optionalMoney = z
   .trim()
   .refine(
     (value) => value === '' || MONEY_PATTERN.test(value.replace(/[\s,]/g, '')),
-    'Enter a number, for example 65000',
+    issue('validation.money'),
   )
   .refine(
     (value) => value === '' || Number(value.replace(/[\s,]/g, '')) <= 100_000_000,
-    'That figure looks too large',
+    issue('validation.moneyTooLarge'),
   );
 
 /** Reads a money field back out as a number, or `undefined` when blank. */
@@ -72,7 +77,7 @@ export function parseMoney(value: string | undefined): number | undefined {
 const optionalHttpUrl = z
   .string()
   .trim()
-  .max(2048, 'Link is too long')
+  .max(2048, issue('validation.urlTooLong'))
   .refine((value) => {
     if (value === '') return true;
     if (!/^https?:\/\//i.test(value)) return false;
@@ -82,14 +87,14 @@ const optionalHttpUrl = z
     } catch {
       return false;
     }
-  }, 'Enter a full link starting with http:// or https://');
+  }, issue('validation.url'));
 
 export const applicationFormSchema = z
   .object({
-    company: requiredText('Company', 120),
-    jobTitle: requiredText('Job title', 120),
+    company: requiredText(120),
+    jobTitle: requiredText(120),
     jobUrl: optionalHttpUrl,
-    location: optionalText('Location', 120),
+    location: optionalText(120),
     workArrangement: z.enum(WORK_ARRANGEMENTS),
     employmentType: z.enum(EMPLOYMENT_TYPES),
     salaryMin: optionalMoney,
@@ -99,11 +104,11 @@ export const applicationFormSchema = z
       .trim()
       .refine(
         (value) => value === '' || /^[A-Za-z]{3}$/.test(value),
-        'Use a 3-letter currency code, for example USD',
+        issue('validation.currency'),
       ),
     appliedDate: requiredDate,
     status: z.enum(APPLICATION_STATUSES),
-    notes: optionalText('Notes', 5000),
+    notes: optionalText(5000),
     nextFollowUpDate: optionalDate,
   })
   .superRefine((values, ctx) => {
@@ -114,7 +119,7 @@ export const applicationFormSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['salaryMax'],
-        message: 'Maximum salary must be greater than or equal to the minimum',
+        message: issue('validation.salaryOrder'),
       });
     }
 
@@ -122,7 +127,7 @@ export const applicationFormSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['salaryCurrency'],
-        message: 'Add a currency code for the salary range',
+        message: issue('validation.currencyNeeded'),
       });
     }
   });
@@ -132,15 +137,15 @@ export type ApplicationFormValues = z.infer<typeof applicationFormSchema>;
 
 export const interviewFormSchema = z.object({
   date: requiredDate,
-  time: z.string().min(1, 'Time is required').refine(isValidTime, 'Enter a time as HH:MM'),
+  time: z.string().min(1, issue('validation.required')).refine(isValidTime, issue('validation.time')),
   type: z.enum(INTERVIEW_TYPES),
-  notes: optionalText('Notes', 2000),
+  notes: optionalText(2000),
 });
 
 export type InterviewFormValues = z.infer<typeof interviewFormSchema>;
 
 export const taskFormSchema = z.object({
-  title: requiredText('Follow-up', 160),
+  title: requiredText(160),
   dueDate: optionalDate,
 });
 

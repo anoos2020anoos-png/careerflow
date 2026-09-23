@@ -1,13 +1,13 @@
 import { AlertTriangle, X } from 'lucide-react';
 import { useAppData } from '@/state/app-data-context';
+import { useT } from '@/i18n/i18n-context';
 
 /** Surfaces unreadable stored data or a failed write, without blocking the app. */
 export function StorageNotice() {
   const { storageNotice, dismissStorageNotice, storageAvailable } = useAppData();
+  const t = useT();
 
-  const message = !storageAvailable
-    ? 'This browser is blocking local storage, so changes will be lost when you close the tab. Private browsing or a site-data setting is the usual cause.'
-    : storageNotice;
+  const message = !storageAvailable ? t('storage.blocked') : storageNotice;
 
   if (!message) return null;
 
@@ -25,7 +25,7 @@ export function StorageNotice() {
           className="rounded-md p-1 text-ink-muted hover:bg-surface hover:text-ink"
         >
           <X className="h-4 w-4" aria-hidden="true" />
-          <span className="sr-only">Dismiss notice</span>
+          <span className="sr-only">{t('storage.dismiss')}</span>
         </button>
       ) : null}
     </div>

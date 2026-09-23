@@ -115,43 +115,6 @@ export interface PersistedData {
   applications: Application[];
 }
 
-/* ------------------------------------------------------------------ */
-/* Display labels                                                      */
-/* ------------------------------------------------------------------ */
-
-export const STATUS_LABELS: Record<ApplicationStatus, string> = {
-  saved: 'Saved',
-  applied: 'Applied',
-  screening: 'Screening',
-  interview: 'Interview',
-  offer: 'Offer',
-  rejected: 'Rejected',
-  withdrawn: 'Withdrawn',
-};
-
-export const WORK_ARRANGEMENT_LABELS: Record<WorkArrangement, string> = {
-  remote: 'Remote',
-  hybrid: 'Hybrid',
-  onsite: 'On-site',
-};
-
-export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
-  full_time: 'Full-time',
-  part_time: 'Part-time',
-  internship: 'Internship',
-  contract: 'Contract',
-};
-
-export const INTERVIEW_TYPE_LABELS: Record<InterviewType, string> = {
-  phone_screen: 'Phone screen',
-  technical: 'Technical',
-  behavioral: 'Behavioral',
-  system_design: 'System design',
-  onsite: 'On-site',
-  final: 'Final round',
-  other: 'Other',
-};
-
 /**
  * Statuses that represent a live opportunity. Used by the "Active" metric and
  * documented in the dashboard so the number is never ambiguous.

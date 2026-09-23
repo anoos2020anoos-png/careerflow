@@ -9,15 +9,12 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Field, Input, Select, Textarea } from '@/components/ui/Field';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
+import { useT } from '@/i18n/i18n-context';
+import { fieldError } from '@/i18n/fieldError';
+import { interviewTypeLabel, relativeDay } from '@/i18n/labels';
 import { interviewFormSchema, type InterviewFormValues } from '@/lib/schemas';
-import {
-  describeRelativeDay,
-  formatDateOnly,
-  formatTime,
-  localTimeZoneName,
-  todayDateOnly,
-} from '@/lib/dates';
-import { INTERVIEW_TYPES, INTERVIEW_TYPE_LABELS, type Interview } from '@/types';
+import { formatDateOnly, formatTime, localTimeZoneName, todayDateOnly } from '@/lib/dates';
+import { INTERVIEW_TYPES, type Interview } from '@/types';
 
 function InterviewDialog({
   open,
@@ -29,7 +26,8 @@ function InterviewDialog({
   onSubmit: (values: InterviewFormValues) => void;
 }) {
   const formId = useId();
-  const timeZone = localTimeZoneName();
+  const t = useT();
+  const timeZone = localTimeZoneName(t('date.localZone'));
 
   const {
     register,
@@ -49,43 +47,52 @@ function InterviewDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title="Add interview"
-      description={`Times are stored and shown in this browser's timezone (${timeZone}).`}
+      title={t('interviews.addTitle')}
+      description={t('interviews.addDesc', { zone: timeZone })}
       closeOnBackdrop={false}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
-            Cancel
+            {t('action.cancel')}
           </Button>
           <Button variant="primary" type="submit" form={formId}>
-            Add interview
+            {t('interviews.addTitle')}
           </Button>
         </>
       }
     >
       <form id={formId} noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Date" required error={errors.date?.message}>
-            {(aria) => <Input {...aria} {...register('date')} type="date" />}
+          <Field label={t('interviews.date')} required error={fieldError(t, errors.date?.message)}>
+            {(aria) => <Input {...aria} {...register('date')} type="date" dir="ltr" />}
           </Field>
-          <Field label="Time" required error={errors.time?.message} hint={`Local time (${timeZone})`}>
-            {(aria) => <Input {...aria} {...register('time')} type="time" />}
+          <Field
+            label={t('interviews.time')}
+            required
+            error={fieldError(t, errors.time?.message)}
+            hint={t('interviews.timeHint', { zone: timeZone })}
+          >
+            {(aria) => <Input {...aria} {...register('time')} type="time" dir="ltr" />}
           </Field>
         </div>
 
-        <Field label="Interview type" required error={errors.type?.message}>
+        <Field label={t('interviews.type')} required error={fieldError(t, errors.type?.message)}>
           {(aria) => (
             <Select {...aria} {...register('type')}>
               {INTERVIEW_TYPES.map((type) => (
                 <option key={type} value={type}>
-                  {INTERVIEW_TYPE_LABELS[type]}
+                  {interviewTypeLabel(t, type)}
                 </option>
               ))}
             </Select>
           )}
         </Field>
 
-        <Field label="Notes" error={errors.notes?.message} hint="Optional. Interviewers, format, topics to revise.">
+        <Field
+          label={t('form.notes')}
+          error={fieldError(t, errors.notes?.message)}
+          hint={t('interviews.notesHint')}
+        >
           {(aria) => <Textarea {...aria} {...register('notes')} rows={3} />}
         </Field>
       </form>
@@ -105,16 +112,19 @@ export function InterviewsPanel({
   const [adding, setAdding] = useState(false);
   const [pendingRemove, setPendingRemove] = useState<Interview | null>(null);
   const today = todayDateOnly();
+  const t = useT();
 
   return (
     <Card>
       <CardHeader
-        title="Interviews"
-        description={`Scheduled in this browser's timezone (${localTimeZoneName()}).`}
+        title={t('interviews.title')}
+        description={t('interviews.description', {
+          zone: localTimeZoneName(t('date.localZone')),
+        })}
         action={
           <Button size="sm" onClick={() => setAdding(true)}>
             <Plus className="h-4 w-4" aria-hidden="true" />
-            Add
+            {t('action.add')}
           </Button>
         }
       />
@@ -122,8 +132,8 @@ export function InterviewsPanel({
       {interviews.length === 0 ? (
         <EmptyState
           icon={CalendarClock}
-          title="No interviews yet"
-          description="Add a date and time once something is scheduled, and it will appear on the dashboard."
+          title={t('interviews.emptyTitle')}
+          description={t('interviews.emptyDesc')}
         />
       ) : (
         <ul className="divide-y divide-line">
@@ -134,13 +144,16 @@ export function InterviewsPanel({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium text-ink">
-                      {formatDateOnly(interview.date)} at {formatTime(interview.time)}
+                      {t('interviews.at', {
+                        date: formatDateOnly(interview.date),
+                        time: formatTime(interview.time),
+                      })}
                     </span>
                     <Badge tone={upcoming ? 'brand' : 'neutral'}>
-                      {INTERVIEW_TYPE_LABELS[interview.type]}
+                      {interviewTypeLabel(t, interview.type)}
                     </Badge>
                     <span className="text-xs text-ink-muted">
-                      {describeRelativeDay(interview.date, today)}
+                      {relativeDay(t, interview.date, today)}
                     </span>
                   </div>
                   {interview.notes ? (
@@ -154,7 +167,10 @@ export function InterviewsPanel({
                   variant="ghost"
                   size="sm"
                   onClick={() => setPendingRemove(interview)}
-                  aria-label={`Remove interview on ${interview.date} at ${interview.time}`}
+                  aria-label={t('interviews.removeAria', {
+                    date: formatDateOnly(interview.date),
+                    time: formatTime(interview.time),
+                  })}
                   className="hover:text-danger"
                 >
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -177,13 +193,16 @@ export function InterviewsPanel({
 
       <ConfirmDialog
         open={pendingRemove !== null}
-        title="Remove this interview?"
+        title={t('interviews.removeTitle')}
         description={
           pendingRemove
-            ? `${formatDateOnly(pendingRemove.date)} at ${formatTime(pendingRemove.time)}`
+            ? t('interviews.at', {
+                date: formatDateOnly(pendingRemove.date),
+                time: formatTime(pendingRemove.time),
+              })
             : ''
         }
-        confirmLabel="Remove"
+        confirmLabel={t('action.remove')}
         destructive
         onConfirm={() => {
           if (pendingRemove) onRemove(pendingRemove.id);

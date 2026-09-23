@@ -5,8 +5,11 @@ import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Field, Input } from '@/components/ui/Field';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useT } from '@/i18n/i18n-context';
+import { fieldError } from '@/i18n/fieldError';
+import { relativeDay } from '@/i18n/labels';
 import { taskFormSchema, type TaskFormValues } from '@/lib/schemas';
-import { describeRelativeDay, formatDateOnly, todayDateOnly } from '@/lib/dates';
+import { formatDateOnly, todayDateOnly } from '@/lib/dates';
 import { isTaskDue } from '@/lib/metrics';
 import type { FollowUpTask } from '@/types';
 import { cn } from '@/lib/cn';
@@ -23,6 +26,7 @@ export function TasksPanel({
   onRemove: (taskId: string) => void;
 }) {
   const today = todayDateOnly();
+  const t = useT();
 
   const {
     register,
@@ -46,15 +50,15 @@ export function TasksPanel({
   return (
     <Card>
       <CardHeader
-        title="Follow-up tasks"
-        description={`${open.length} open, ${done.length} completed.`}
+        title={t('tasks.title')}
+        description={t('tasks.summary', { open: open.length, done: done.length })}
       />
 
       {ordered.length === 0 ? (
         <EmptyState
           icon={ListChecks}
-          title="No follow-ups"
-          description="Add a reminder such as “email the recruiter” or “prepare system design notes”."
+          title={t('tasks.emptyTitle')}
+          description={t('tasks.emptyDesc')}
         />
       ) : (
         <ul className="divide-y divide-line">
@@ -85,7 +89,10 @@ export function TasksPanel({
                         due ? 'font-medium text-warning' : 'text-ink-muted',
                       )}
                     >
-                      Due {formatDateOnly(task.dueDate)} · {describeRelativeDay(task.dueDate, today)}
+                      {t('tasks.due', {
+                        date: formatDateOnly(task.dueDate),
+                        relative: relativeDay(t, task.dueDate, today),
+                      })}
                     </span>
                   ) : null}
                 </label>
@@ -94,7 +101,7 @@ export function TasksPanel({
                   variant="ghost"
                   size="sm"
                   onClick={() => onRemove(task.id)}
-                  aria-label={`Remove follow-up: ${task.title}`}
+                  aria-label={t('tasks.removeAria', { title: task.title })}
                   className="hover:text-danger"
                 >
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -106,18 +113,30 @@ export function TasksPanel({
       )}
 
       <CardBody className="border-t border-line">
-        <form noValidate onSubmit={handleSubmit(submit)} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <Field label="New follow-up" error={errors.title?.message} className="flex-1">
+        <form
+          noValidate
+          onSubmit={handleSubmit(submit)}
+          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+        >
+          <Field
+            label={t('tasks.newLabel')}
+            error={fieldError(t, errors.title?.message)}
+            className="flex-1"
+          >
             {(aria) => (
-              <Input {...aria} {...register('title')} placeholder="Email the recruiter" />
+              <Input {...aria} {...register('title')} placeholder={t('tasks.newPlaceholder')} />
             )}
           </Field>
-          <Field label="Due date" error={errors.dueDate?.message} className="sm:w-44">
-            {(aria) => <Input {...aria} {...register('dueDate')} type="date" />}
+          <Field
+            label={t('tasks.dueDate')}
+            error={fieldError(t, errors.dueDate?.message)}
+            className="sm:w-44"
+          >
+            {(aria) => <Input {...aria} {...register('dueDate')} type="date" dir="ltr" />}
           </Field>
           <Button type="submit" variant="primary" className="sm:mb-0">
             <Plus className="h-4 w-4" aria-hidden="true" />
-            Add
+            {t('action.add')}
           </Button>
         </form>
       </CardBody>

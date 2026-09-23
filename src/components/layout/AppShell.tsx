@@ -3,27 +3,32 @@ import { Briefcase, LayoutDashboard, Settings } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Logo } from '@/components/layout/Logo';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import { LocaleToggle } from '@/components/layout/LocaleToggle';
 import { StorageNotice } from '@/components/layout/StorageNotice';
+import { useT } from '@/i18n/i18n-context';
+import type { MessageKey } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
 
 interface NavItem {
   to: string;
-  label: string;
+  labelKey: MessageKey;
   icon: LucideIcon;
   end?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/applications', label: 'Applications', icon: Briefcase },
-  { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, end: true },
+  { to: '/applications', labelKey: 'nav.applications', icon: Briefcase },
+  { to: '/settings', labelKey: 'nav.settings', icon: Settings },
 ];
 
 export function AppShell() {
+  const t = useT();
+
   return (
     <div className="min-h-screen bg-canvas">
       <a href="#main-content" className="cf-skip-link">
-        Skip to main content
+        {t('shell.skip')}
       </a>
 
       {/* Desktop sidebar */}
@@ -31,7 +36,7 @@ export function AppShell() {
         <div className="flex h-16 items-center px-5">
           <Logo />
         </div>
-        <nav aria-label="Main" className="flex-1 px-3 py-2">
+        <nav aria-label={t('nav.label')} className="flex-1 px-3 py-2">
           <ul className="flex flex-col gap-1">
             {NAV_ITEMS.map((item) => (
               <li key={item.to}>
@@ -50,8 +55,8 @@ export function AppShell() {
                   {({ isActive }) => (
                     <>
                       <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                      {item.label}
-                      {isActive ? <span className="sr-only"> (current page)</span> : null}
+                      {t(item.labelKey)}
+                      {isActive ? <span className="sr-only">{t('nav.current')}</span> : null}
                     </>
                   )}
                 </NavLink>
@@ -60,19 +65,22 @@ export function AppShell() {
           </ul>
         </nav>
         <p className="border-t border-line px-5 py-4 text-xs leading-relaxed text-ink-muted">
-          Data is stored only in this browser. Nothing is uploaded and nothing syncs between
-          devices.
+          {t('shell.storageNote')}
         </p>
       </aside>
 
       {/* Mobile top bar */}
       <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-line bg-surface px-4 lg:hidden">
         <Logo />
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <LocaleToggle />
+          <ThemeToggle />
+        </div>
       </header>
 
       {/* Desktop top bar */}
       <div className="hidden h-16 items-center justify-end gap-3 border-b border-line bg-surface px-6 lg:flex lg:ps-[16rem]">
+        <LocaleToggle />
         <ThemeToggle />
       </div>
 
@@ -87,7 +95,7 @@ export function AppShell() {
 
       {/* Mobile bottom navigation */}
       <nav
-        aria-label="Main"
+        aria-label={t('nav.label')}
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface lg:hidden"
       >
         <ul className="mx-auto flex max-w-lg">
@@ -106,8 +114,8 @@ export function AppShell() {
                 {({ isActive }) => (
                   <>
                     <item.icon className="h-5 w-5" aria-hidden="true" />
-                    {item.label}
-                    {isActive ? <span className="sr-only"> (current page)</span> : null}
+                    {t(item.labelKey)}
+                    {isActive ? <span className="sr-only">{t('nav.current')}</span> : null}
                   </>
                 )}
               </NavLink>

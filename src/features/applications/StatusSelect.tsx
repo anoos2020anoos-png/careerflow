@@ -1,5 +1,7 @@
 import { useId } from 'react';
-import { APPLICATION_STATUSES, STATUS_LABELS, type ApplicationStatus } from '@/types';
+import { APPLICATION_STATUSES, type ApplicationStatus } from '@/types';
+import { useT } from '@/i18n/i18n-context';
+import { statusLabel } from '@/i18n/labels';
 import { cn } from '@/lib/cn';
 
 /**
@@ -16,12 +18,13 @@ export function StatusSelect({
 }: {
   value: ApplicationStatus;
   onChange: (status: ApplicationStatus) => void;
-  /** Visually hidden label, e.g. "Status for Northwind Analytics". */
+  /** Visually hidden label, e.g. "Status for Data Analyst at Rimal Analytics". */
   label: string;
   className?: string;
   size?: 'sm' | 'md';
 }) {
   const id = useId();
+  const t = useT();
 
   return (
     <>
@@ -40,7 +43,7 @@ export function StatusSelect({
       >
         {APPLICATION_STATUSES.map((status) => (
           <option key={status} value={status}>
-            {STATUS_LABELS[status]}
+            {statusLabel(t, status)}
           </option>
         ))}
       </select>

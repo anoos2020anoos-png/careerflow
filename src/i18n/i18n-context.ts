@@ -1,0 +1,27 @@
+import { createContext, useContext } from 'react';
+import type { Locale, MessageKey } from '@/i18n/messages';
+
+export type Translate = (
+  key: MessageKey,
+  vars?: Record<string, string | number>,
+) => string;
+
+export interface I18nValue {
+  locale: Locale;
+  dir: 'ltr' | 'rtl';
+  setLocale: (locale: Locale) => void;
+  t: Translate;
+}
+
+export const I18nContext = createContext<I18nValue | null>(null);
+
+export function useI18n(): I18nValue {
+  const value = useContext(I18nContext);
+  if (!value) throw new Error('useI18n must be used inside <I18nProvider>');
+  return value;
+}
+
+/** Shorthand for the common case of only needing the translate function. */
+export function useT(): Translate {
+  return useI18n().t;
+}

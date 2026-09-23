@@ -44,6 +44,17 @@ function activity(kind: ActivityKind, extra: Partial<ActivityEntry> = {}): Activ
 }
 
 /**
+ * Tokens, not sentences: an activity entry is persisted, so the wording has to
+ * be chosen when the timeline is *rendered* rather than when the edit happens —
+ * otherwise a record created in English would stay English after the visitor
+ * switches to Arabic. `TimelinePanel` maps these to messages and falls back to
+ * showing an unrecognised detail verbatim, which is what records written by
+ * earlier versions carry.
+ */
+export const EDIT_DETAILS = 'details';
+export const EDIT_NOTES = 'notes';
+
+/**
  * Maps validated form strings onto the stored shape: trims text, converts money
  * fields to numbers and drops anything the user left blank.
  */
@@ -82,7 +93,7 @@ function fieldsFromForm(values: ApplicationFormValues) {
 
 export function createApplication(values: ApplicationFormValues): Application {
   const timestamp = nowIso();
-  const entries: ActivityEntry[] = [activity('created', { detail: 'Application added' })];
+  const entries: ActivityEntry[] = [activity('created')];
   if (values.status !== 'saved') {
     entries.push(activity('status_changed', { from: 'saved', to: values.status }));
   }
@@ -109,7 +120,7 @@ export function applyFormValues(
   entries.push(
     statusChanged
       ? activity('status_changed', { from: application.status, to: fields.status })
-      : activity('updated', { detail: 'Details edited' }),
+      : activity('updated', { detail: EDIT_DETAILS }),
   );
 
   // Rebuilt from `fields` rather than spread over the previous record, so
@@ -145,7 +156,7 @@ export function withNotes(application: Application, notes: string): Application 
   const next: Application = {
     ...application,
     updatedAt: nowIso(),
-    activity: [...application.activity, activity('updated', { detail: 'Notes edited' })],
+    activity: [...application.activity, activity('updated', { detail: EDIT_NOTES })],
   };
   if (trimmed) next.notes = trimmed;
   else delete next.notes;

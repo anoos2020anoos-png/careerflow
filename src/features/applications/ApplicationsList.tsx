@@ -2,12 +2,13 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Briefcase, MapPin, Pencil, Trash2 } from 'lucide-react';
 import type { Application, ApplicationStatus } from '@/types';
-import { EMPLOYMENT_TYPE_LABELS, WORK_ARRANGEMENT_LABELS } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusSelect } from '@/features/applications/StatusSelect';
 import { formatDateOnly, formatInstant } from '@/lib/dates';
+import { useT } from '@/i18n/i18n-context';
+import { arrangementLabel, employmentLabel, salaryLabels } from '@/i18n/labels';
 import { formatSalaryRange } from '@/lib/format';
 
 export interface ApplicationsListProps {
@@ -29,6 +30,8 @@ export function ApplicationsList({
   emptyTitle,
   emptyDescription,
 }: ApplicationsListProps) {
+  const t = useT();
+
   if (applications.length === 0) {
     return (
       <div className="cf-card">
@@ -48,27 +51,27 @@ export function ApplicationsList({
       <div className="cf-card hidden overflow-hidden md:block">
         <table className="w-full border-collapse text-sm">
           <caption className="sr-only">
-            Job applications, with status, dates and actions for each row
+            {t('applications.caption')}
           </caption>
           <thead>
             <tr className="border-b border-line bg-surface-muted/60 text-start">
               <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
-                Role
+                {t('applications.colRole')}
               </th>
               <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
-                Location
+                {t('applications.colLocation')}
               </th>
               <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
-                Applied
+                {t('applications.colApplied')}
               </th>
               <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
-                Status
+                {t('applications.colStatus')}
               </th>
               <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
-                Updated
+                {t('applications.colUpdated')}
               </th>
               <th scope="col" className="px-4 py-3 text-end font-medium text-ink-muted">
-                Actions
+                {t('applications.colActions')}
               </th>
             </tr>
           </thead>
@@ -78,6 +81,7 @@ export function ApplicationsList({
                 application.salaryMin,
                 application.salaryMax,
                 application.salaryCurrency,
+                salaryLabels(t),
               );
               return (
                 <tr
@@ -95,10 +99,10 @@ export function ApplicationsList({
                     {salary ? <p className="mt-0.5 text-xs text-ink-muted">{salary}</p> : null}
                   </td>
                   <td className="px-4 py-3 align-top text-ink-muted">
-                    <p>{application.location || '—'}</p>
+                    <p>{application.location || t('common.none')}</p>
                     <p className="mt-1 flex flex-wrap gap-1">
-                      <Badge>{WORK_ARRANGEMENT_LABELS[application.workArrangement]}</Badge>
-                      <Badge>{EMPLOYMENT_TYPE_LABELS[application.employmentType]}</Badge>
+                      <Badge>{arrangementLabel(t, application.workArrangement)}</Badge>
+                      <Badge>{employmentLabel(t, application.employmentType)}</Badge>
                     </p>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 align-top text-ink-muted">
@@ -108,7 +112,10 @@ export function ApplicationsList({
                     <StatusSelect
                       value={application.status}
                       onChange={(status) => onStatusChange(application.id, status)}
-                      label={`Status for ${application.jobTitle} at ${application.company}`}
+                      label={t('applications.statusAria', {
+                        title: application.jobTitle,
+                        company: application.company,
+                      })}
                       size="sm"
                     />
                   </td>
@@ -121,7 +128,10 @@ export function ApplicationsList({
                         variant="ghost"
                         size="sm"
                         onClick={() => onEdit(application)}
-                        aria-label={`Edit ${application.jobTitle} at ${application.company}`}
+                        aria-label={t('applications.editAria', {
+                          title: application.jobTitle,
+                          company: application.company,
+                        })}
                       >
                         <Pencil className="h-4 w-4" aria-hidden="true" />
                       </Button>
@@ -129,7 +139,10 @@ export function ApplicationsList({
                         variant="ghost"
                         size="sm"
                         onClick={() => onDelete(application)}
-                        aria-label={`Delete ${application.jobTitle} at ${application.company}`}
+                        aria-label={t('applications.deleteAria', {
+                          title: application.jobTitle,
+                          company: application.company,
+                        })}
                         className="hover:text-danger"
                       >
                         <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -150,6 +163,7 @@ export function ApplicationsList({
             application.salaryMin,
             application.salaryMax,
             application.salaryCurrency,
+            salaryLabels(t),
           );
           return (
             <li key={application.id} className="cf-card p-4">
@@ -168,7 +182,10 @@ export function ApplicationsList({
                     variant="ghost"
                     size="sm"
                     onClick={() => onEdit(application)}
-                    aria-label={`Edit ${application.jobTitle} at ${application.company}`}
+                    aria-label={t('applications.editAria', {
+                          title: application.jobTitle,
+                          company: application.company,
+                        })}
                   >
                     <Pencil className="h-4 w-4" aria-hidden="true" />
                   </Button>
@@ -176,7 +193,10 @@ export function ApplicationsList({
                     variant="ghost"
                     size="sm"
                     onClick={() => onDelete(application)}
-                    aria-label={`Delete ${application.jobTitle} at ${application.company}`}
+                    aria-label={t('applications.deleteAria', {
+                          title: application.jobTitle,
+                          company: application.company,
+                        })}
                     className="hover:text-danger"
                   >
                     <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -192,19 +212,24 @@ export function ApplicationsList({
               ) : null}
 
               <div className="mt-2 flex flex-wrap gap-1.5">
-                <Badge>{WORK_ARRANGEMENT_LABELS[application.workArrangement]}</Badge>
-                <Badge>{EMPLOYMENT_TYPE_LABELS[application.employmentType]}</Badge>
+                <Badge>{arrangementLabel(t, application.workArrangement)}</Badge>
+                <Badge>{employmentLabel(t, application.employmentType)}</Badge>
                 {salary ? <Badge>{salary}</Badge> : null}
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-3">
                 <span className="text-xs text-ink-muted">
-                  Applied {formatDateOnly(application.appliedDate)}
+                  {t('applications.appliedOn', {
+                    date: formatDateOnly(application.appliedDate),
+                  })}
                 </span>
                 <StatusSelect
                   value={application.status}
                   onChange={(status) => onStatusChange(application.id, status)}
-                  label={`Status for ${application.jobTitle} at ${application.company}`}
+                  label={t('applications.statusAria', {
+                        title: application.jobTitle,
+                        company: application.company,
+                      })}
                   size="sm"
                 />
               </div>

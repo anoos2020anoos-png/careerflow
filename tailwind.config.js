@@ -30,6 +30,9 @@ export default {
       fontFamily: {
         sans: [
           'Inter',
+          // Inter has no Arabic glyphs; the browser falls through to this for
+          // Arabic text, which keeps one visual weight across both scripts.
+          'Noto Sans Arabic',
           'ui-sans-serif',
           'system-ui',
           '-apple-system',

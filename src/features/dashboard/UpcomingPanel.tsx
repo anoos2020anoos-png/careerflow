@@ -5,23 +5,25 @@ import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import type { OpenTask, UpcomingInterview } from '@/lib/metrics';
 import { isTaskDue } from '@/lib/metrics';
-import { describeRelativeDay, formatDateOnly, formatTime, todayDateOnly } from '@/lib/dates';
-import { INTERVIEW_TYPE_LABELS } from '@/types';
+import { useT } from '@/i18n/i18n-context';
+import { interviewTypeLabel, relativeDay } from '@/i18n/labels';
+import { formatDateOnly, formatTime, todayDateOnly } from '@/lib/dates';
 
 export function UpcomingInterviewsCard({ items }: { items: UpcomingInterview[] }) {
   const today = todayDateOnly();
+  const t = useT();
 
   return (
     <Card>
       <CardHeader
-        title="Upcoming interviews"
-        description="Scheduled today or later, on applications that are still open."
+        title={t('panel.interviews')}
+        description={t('panel.interviewsDesc')}
       />
       {items.length === 0 ? (
         <EmptyState
           icon={CalendarClock}
-          title="Nothing scheduled"
-          description="Add an interview from an application's detail page and it will show up here."
+          title={t('panel.interviewsEmpty')}
+          description={t('panel.interviewsEmptyDesc')}
         />
       ) : (
         <ul className="divide-y divide-line">
@@ -36,13 +38,16 @@ export function UpcomingInterviewsCard({ items }: { items: UpcomingInterview[] }
                 </Link>
                 <p className="truncate text-xs text-ink-muted">{company}</p>
                 <p className="mt-1 text-xs text-ink-muted">
-                  {formatDateOnly(interview.date)} at {formatTime(interview.time)}
+                  {t('interviews.at', {
+                    date: formatDateOnly(interview.date),
+                    time: formatTime(interview.time),
+                  })}
                 </p>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">
-                <Badge tone="brand">{INTERVIEW_TYPE_LABELS[interview.type]}</Badge>
+                <Badge tone="brand">{interviewTypeLabel(t, interview.type)}</Badge>
                 <span className="text-xs text-ink-muted">
-                  {describeRelativeDay(interview.date, today)}
+                  {relativeDay(t, interview.date, today)}
                 </span>
               </div>
             </li>
@@ -55,18 +60,19 @@ export function UpcomingInterviewsCard({ items }: { items: UpcomingInterview[] }
 
 export function OpenTasksCard({ items }: { items: OpenTask[] }) {
   const today = todayDateOnly();
+  const t = useT();
 
   return (
     <Card>
       <CardHeader
-        title="Follow-ups"
-        description="Open tasks across every application that is still open, soonest first."
+        title={t('panel.followUps')}
+        description={t('panel.followUpsDesc')}
       />
       {items.length === 0 ? (
         <EmptyState
           icon={ListChecks}
-          title="Nothing outstanding"
-          description="Follow-up tasks you add to an application appear here until you tick them off."
+          title={t('panel.followUpsEmpty')}
+          description={t('panel.followUpsEmptyDesc')}
         />
       ) : (
         <ul className="divide-y divide-line">
@@ -87,10 +93,10 @@ export function OpenTasksCard({ items }: { items: OpenTask[] }) {
                   <span
                     className={`shrink-0 text-xs ${due ? 'font-medium text-warning' : 'text-ink-muted'}`}
                   >
-                    {describeRelativeDay(task.dueDate, today)}
+                    {relativeDay(t, task.dueDate, today)}
                   </span>
                 ) : (
-                  <span className="shrink-0 text-xs text-ink-muted">No date</span>
+                  <span className="shrink-0 text-xs text-ink-muted">{t('panel.noDate')}</span>
                 )}
               </li>
             );
