@@ -89,7 +89,10 @@ export function FiltersBar({
 
   const filtersActive = hasActiveFilters(state);
   const activeCount =
-    state.statuses.length + state.arrangements.length + state.employmentTypes.length;
+    state.statuses.length +
+    state.arrangements.length +
+    state.employmentTypes.length +
+    (state.onlyMeetingEssentials ? 1 : 0);
   const ascending = state.sortDirection === 'asc';
 
   return (
@@ -191,6 +194,25 @@ export function FiltersBar({
               onChange({ ...state, employmentTypes: toggleValue(state.employmentTypes, value) })
             }
           />
+
+          <div className="border-t border-line pt-4">
+            <label className="flex cursor-pointer items-start gap-2.5 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={state.onlyMeetingEssentials}
+                onChange={(event) =>
+                  onChange({ ...state, onlyMeetingEssentials: event.target.checked })
+                }
+                className="mt-0.5 h-3.5 w-3.5 rounded border-line accent-brand"
+              />
+              <span>
+                {t('filters.onlyMeetingEssentials')}
+                <span className="mt-0.5 block text-xs text-ink-muted">
+                  {t('filters.onlyMeetingEssentialsHint')}
+                </span>
+              </span>
+            </label>
+          </div>
         </div>
       ) : null}
 

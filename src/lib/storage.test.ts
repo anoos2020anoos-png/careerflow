@@ -7,7 +7,7 @@ import {
   saveData,
 } from '@/lib/storage';
 import { DATA_VERSION } from '@/lib/schemas';
-import { makeApplication } from '@/test/factories';
+import { makeApplication, makeProfile, makeQualification } from '@/test/factories';
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -93,6 +93,38 @@ describe('loadData', () => {
     loadData();
 
     expect(window.localStorage.getItem(CORRUPT_BACKUP_KEY)).toBe('totally broken');
+  });
+
+  it('migrates a version 1 payload without losing anything', () => {
+    const application = makeApplication({ id: 'kept' });
+    // Version 1 records have no `requirements`, and the envelope has no profile.
+    const legacy = { ...application } as Record<string, unknown>;
+    delete legacy.requirements;
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ version: 1, applications: [legacy] }),
+    );
+
+    const outcome = loadData();
+    expect(outcome.kind).toBe('loaded');
+    if (outcome.kind === 'loaded') {
+      expect(outcome.data.version).toBe(DATA_VERSION);
+      expect(outcome.data.applications[0]?.id).toBe('kept');
+      // Filled in rather than left undefined, so nothing downstream has to ask.
+      expect(outcome.data.applications[0]?.requirements).toEqual([]);
+      expect(outcome.data.profile.qualifications).toEqual([]);
+      // Nothing is quarantined: this is a normal upgrade, not corruption.
+      expect(window.localStorage.getItem(CORRUPT_BACKUP_KEY)).toBeNull();
+    }
+  });
+
+  it('round-trips a profile', () => {
+    saveData([], makeProfile([makeQualification('TypeScript')]));
+    const outcome = loadData();
+    expect(outcome.kind).toBe('loaded');
+    if (outcome.kind === 'loaded') {
+      expect(outcome.data.profile.qualifications[0]?.label).toBe('TypeScript');
+    }
   });
 
   it('accepts a pre-versioned payload that only has an applications array', () => {

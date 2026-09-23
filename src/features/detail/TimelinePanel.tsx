@@ -37,6 +37,14 @@ function describe(t: Translate, entry: ActivityEntry): string {
       return detail ? t('timeline.taskReopened', { detail }) : t('timeline.updated');
     case 'task_removed':
       return detail ? t('timeline.taskRemoved', { detail }) : t('timeline.updated');
+    case 'requirement_added':
+      return detail ? t('timeline.requirementAdded', { detail }) : t('timeline.updated');
+    case 'requirement_removed':
+      return detail ? t('timeline.requirementRemoved', { detail }) : t('timeline.updated');
+    case 'requirement_met':
+      return detail ? t('timeline.requirementMet', { detail }) : t('timeline.updated');
+    case 'requirement_unmet':
+      return detail ? t('timeline.requirementUnmet', { detail }) : t('timeline.updated');
     default:
       return t('timeline.updated');
   }

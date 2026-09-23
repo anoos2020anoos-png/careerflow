@@ -5,14 +5,20 @@ import type {
   ApplicationStatus,
   FollowUpTask,
   Interview,
+  Profile,
+  Qualification,
+  Requirement,
 } from '@/types';
 import type {
   ApplicationFormValues,
   InterviewFormValues,
+  QualificationFormValues,
+  RequirementFormValues,
   TaskFormValues,
 } from '@/lib/schemas';
 import { parseMoney } from '@/lib/schemas';
 import { createId } from '@/lib/ids';
+import { suggestQualification } from '@/lib/match';
 
 /**
  * Pure transformations over a single application.
@@ -105,6 +111,7 @@ export function createApplication(values: ApplicationFormValues): Application {
     updatedAt: timestamp,
     interviews: [],
     tasks: [],
+    requirements: [],
     activity: entries,
   };
 }
@@ -132,6 +139,7 @@ export function applyFormValues(
     updatedAt: nowIso(),
     interviews: application.interviews,
     tasks: application.tasks,
+    requirements: application.requirements,
     activity: entries,
   };
 }
@@ -253,6 +261,123 @@ export function withoutTask(application: Application, taskId: string): Applicati
     activity: [...application.activity, activity('task_removed', { detail: target.title })],
   };
 }
+
+/* ================================================================== */
+/* Requirements                                                        */
+/* ================================================================== */
+
+/**
+ * Adds a requirement taken from the posting.
+ *
+ * If the profile already lists something that plainly answers it, the box is
+ * ticked to save the user a click — but only on the conservative match in
+ * `lib/match.ts`, because a wrongly pre-ticked box puts a claim in the user's
+ * mouth that they never made. They can untick it, and nothing re-ticks it.
+ */
+export function withRequirement(
+  application: Application,
+  values: RequirementFormValues,
+  profile?: Profile,
+): Application {
+  const label = values.label.trim();
+  const requirement: Requirement = {
+    id: createId(),
+    label,
+    importance: values.importance,
+    met: profile ? suggestQualification(profile, label) !== undefined : false,
+    createdAt: nowIso(),
+  };
+
+  return {
+    ...application,
+    updatedAt: nowIso(),
+    requirements: [...application.requirements, requirement],
+    activity: [...application.activity, activity('requirement_added', { detail: label })],
+  };
+}
+
+export function withRequirementToggled(
+  application: Application,
+  requirementId: string,
+): Application {
+  const target = application.requirements.find((entry) => entry.id === requirementId);
+  if (!target) return application;
+
+  const met = !target.met;
+  return {
+    ...application,
+    updatedAt: nowIso(),
+    requirements: application.requirements.map((entry) =>
+      entry.id === requirementId ? { ...entry, met } : entry,
+    ),
+    activity: [
+      ...application.activity,
+      activity(met ? 'requirement_met' : 'requirement_unmet', { detail: target.label }),
+    ],
+  };
+}
+
+export function withoutRequirement(
+  application: Application,
+  requirementId: string,
+): Application {
+  const target = application.requirements.find((entry) => entry.id === requirementId);
+  if (!target) return application;
+
+  return {
+    ...application,
+    updatedAt: nowIso(),
+    requirements: application.requirements.filter((entry) => entry.id !== requirementId),
+    activity: [
+      ...application.activity,
+      activity('requirement_removed', { detail: target.label }),
+    ],
+  };
+}
+
+/* ================================================================== */
+/* Profile                                                             */
+/* ================================================================== */
+
+export function withQualification(
+  profile: Profile,
+  values: QualificationFormValues,
+): Profile {
+  const qualification: Qualification = {
+    id: createId(),
+    label: values.label.trim(),
+    kind: values.kind,
+    createdAt: nowIso(),
+  };
+  return {
+    ...profile,
+    qualifications: [...profile.qualifications, qualification],
+    updatedAt: nowIso(),
+  };
+}
+
+export function withoutQualification(profile: Profile, qualificationId: string): Profile {
+  if (!profile.qualifications.some((entry) => entry.id === qualificationId)) return profile;
+  return {
+    ...profile,
+    qualifications: profile.qualifications.filter((entry) => entry.id !== qualificationId),
+    updatedAt: nowIso(),
+  };
+}
+
+export function withHeadline(profile: Profile, headline: string): Profile {
+  const trimmed = headline.trim();
+  if ((profile.headline ?? '') === trimmed) return profile;
+
+  const next: Profile = { ...profile, updatedAt: nowIso() };
+  if (trimmed) next.headline = trimmed;
+  else delete next.headline;
+  return next;
+}
+
+/* ================================================================== */
+/* Form helpers                                                        */
+/* ================================================================== */
 
 /** Blank form, used by "Add application". */
 export function emptyFormValues(appliedDate: string): ApplicationFormValues {

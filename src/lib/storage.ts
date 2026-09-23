@@ -1,4 +1,5 @@
-import type { Application, PersistedData } from '@/types';
+import type { Application, PersistedData, Profile } from '@/types';
+import { emptyProfile } from '@/types';
 import { DATA_VERSION, persistedDataSchema } from '@/lib/schemas';
 
 export const STORAGE_KEY = 'careerflow:data';
@@ -32,19 +33,44 @@ export function isStorageAvailable(): boolean {
 }
 
 /**
- * Applies forward migrations. Only version 1 exists today; the switch is the
- * seam where a future shape change lands without breaking existing users.
+ * Applies forward migrations before validation.
+ *
+ * Version 2 added `Application.requirements` and a top-level `profile`. Both are
+ * additive: a version 1 payload is valid version 2 data with those fields empty,
+ * so the migration is a version stamp rather than a rewrite, and the schema
+ * marks both optional so an un-migrated payload still parses.
  */
 function migrate(raw: unknown): unknown {
   if (typeof raw !== 'object' || raw === null) return raw;
-  const record = raw as Record<string, unknown>;
-  if (typeof record.version !== 'number') {
-    // Pre-versioned payloads: treat a bare array of applications as v1.
-    if (Array.isArray(record.applications)) {
-      return { version: DATA_VERSION, applications: record.applications };
-    }
+  const record = { ...(raw as Record<string, unknown>) };
+
+  // Pre-versioned payloads: treat a bare list of applications as version 1.
+  if (typeof record.version !== 'number' && Array.isArray(record.applications)) {
+    record.version = 1;
   }
+
+  if (record.version === 1) record.version = 2;
+
   return record;
+}
+
+/**
+ * Fills in what the migration left absent, so the rest of the app never has to
+ * ask whether a record predates version 2.
+ */
+function normalize(parsed: {
+  version: number;
+  applications: unknown[];
+  profile?: Profile;
+}): PersistedData {
+  return {
+    version: parsed.version,
+    applications: (parsed.applications as Application[]).map((application) => ({
+      ...application,
+      requirements: application.requirements ?? [],
+    })),
+    profile: parsed.profile ?? emptyProfile(new Date(0).toISOString()),
+  };
 }
 
 export function loadData(): LoadOutcome {
@@ -81,7 +107,7 @@ export function loadData(): LoadOutcome {
     };
   }
 
-  return { kind: 'loaded', data: result.data };
+  return { kind: 'loaded', data: normalize(result.data) };
 }
 
 function quarantine(storage: Storage, raw: string) {
@@ -92,10 +118,14 @@ function quarantine(storage: Storage, raw: string) {
   }
 }
 
-export function saveData(applications: Application[]): boolean {
+export function saveData(applications: Application[], profile?: Profile): boolean {
   const storage = getStorage();
   if (!storage) return false;
-  const payload: PersistedData = { version: DATA_VERSION, applications };
+  const payload: PersistedData = {
+    version: DATA_VERSION,
+    applications,
+    profile: profile ?? emptyProfile(new Date(0).toISOString()),
+  };
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify(payload));
     return true;

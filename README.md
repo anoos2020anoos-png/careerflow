@@ -72,6 +72,22 @@ visitor can try in ten seconds and that keeps their data on their own machine.
 Every figure is derived from the stored records on each render, so the dashboard
 updates the moment anything changes.
 
+**Requirements and your background**
+
+- A **Background** page for what you can point to: degrees, languages, tools,
+  certificates, experience. It stays in this browser like everything else.
+- On each application, a panel for the requirements in the posting's own words,
+  marked essential or preferred, and ticked when you have them.
+- Adding a requirement pre-ticks it when your background plainly answers it —
+  conservatively, and only as a starting point you can correct. A single word
+  shared between two unrelated phrases is not treated as a match.
+- The result is reported as **"4 of 6 essential"**, with its denominator beside
+  it. It is a count of what the posting asked for, not a score and not a
+  prediction: see [Engineering decisions](#engineering-decisions).
+- A filter for applications where you meet every essential requirement. Ones
+  with no requirements written down are excluded rather than included — an empty
+  list has not claimed anything.
+
 **Language**
 
 - English and Arabic, switched from Settings or the top bar and remembered
@@ -158,6 +174,7 @@ src/
 │   ├── schemas.ts              Zod: form validation + persisted/import validation
 │   ├── applications.ts         Pure transformations over one application
 │   ├── metrics.ts              Dashboard calculations
+│   ├── match.ts                Requirements against the profile - counts, never a score
 │   ├── filters.ts              Search, filtering and sorting
 │   ├── storage.ts              Versioned localStorage read/write, corruption handling
 │   ├── transfer.ts             JSON export and validated import
@@ -272,6 +289,8 @@ The suite covers the logic most likely to break silently:
 | `src/lib/storage.test.ts` | Save/load round-trip, "cleared" vs "never visited", malformed JSON, schema violations, a newer format version, and the quarantine backup. |
 | `src/lib/transfer.test.ts` | Export shape, three accepted import shapes, and every rejection path — including that a rejected import never returns records, so it cannot cause data loss. |
 | `src/lib/outcomes.test.ts` | The track-record figures: what counts as a reply, that an application which reached Interview and was later rejected still counts as interviewed, that Saved-only records stay out of the denominator, that withdrawing is not a reply, and the median wait including the even-count case. |
+| `src/lib/match.test.ts` | The requirement counts, that an empty list reports "no requirements" rather than 0%, and the conservative matching rule — including that a degree in English does not pre-tick "English at business level". |
+| `src/pages/ProfilePage.test.tsx` | Through the real provider: adding, removing and persisting a qualification, that the demo data seeds no invented background, that a matching requirement arrives pre-ticked and a non-matching one does not, and that unticking a suggestion sticks. |
 | `src/pages/ApplicationsPage.test.tsx` | End-to-end through the real provider: adding an application, validation blocking a bad submit, Escape discarding a draft, search and status filtering, changing status, and the delete confirmation. |
 | `src/pages/SettingsPage.test.tsx` | Clearing data without re-seeding, restoring the sample data, and the theme being remembered. |
 | `src/i18n/i18n.test.tsx` | That both dictionaries define the same keys with the same `{placeholders}` and no blank strings, that `fieldError` decodes a key with and without its argument and passes an unknown message through, and that switching language translates the interface, flips `dir` on the document and is remembered. |
@@ -421,6 +440,38 @@ red) and Saved/Applied. Both are accepted deliberately, because identity in that
 chart comes from the category label on every bar plus the screen-reader table —
 no reader has to distinguish the bars by hue. This is the kind of trade-off worth
 making explicitly rather than discovering later.
+
+**The requirements panel counts; it does not score.** The obvious feature here is
+"your chance of getting this job: 72%". It is also the one thing this app cannot
+honestly produce. Whether an application succeeds depends on the other
+candidates, the hiring budget, the timing and the person reading the CV — none
+of which is in this browser, so any percentage would be a number with a
+confident shape and nothing behind it. What *is* knowable is how many of the
+things a posting asked for the applicant can point to, because both lists are in
+front of them. So the panel reports "4 of 6 essential", always with its
+denominator, and `lib/match.ts` carries the reasoning at the top of the file so
+the next person to open it does not quietly turn it into a score.
+
+**The pre-tick is deliberately reluctant.** When a requirement is added, it
+starts ticked if the profile plainly answers it — but the matching rule only
+fires when one side's words are wholly contained in the other's. "React" matches
+"React and TypeScript"; a degree in English does not match "English at business
+level", because they share one word and nothing else. A false positive here is
+worse than a false negative: a wrongly pre-ticked box is a claim the user never
+made, sitting in their own records. Nothing re-ticks a box the user has cleared.
+
+**The profile is not part of the demo data.** The fifteen sample applications are
+fictional and say so. Seeding a background as well would mean inventing the
+user's own degrees and languages, which is a different kind of fiction — so the
+Background page starts empty, and the requirements panel explains itself without
+it.
+
+**Version 2 of the persisted format is additive, and the migration is a version
+stamp.** `Application.requirements` and the top-level `profile` are both optional
+in the schema, so a version 1 payload parses as-is; `migrate()` stamps the
+version and `normalize()` fills the gaps before anything downstream sees the
+data. Nothing is quarantined and nothing is lost, which is the whole reason the
+envelope carried a `version` field from the first commit.
 
 **English is the source of truth for translations, and the compiler enforces the
 rest.** `messages.ts` defines the English dictionary as a plain object; its keys

@@ -4,6 +4,8 @@ import type {
   ApplicationStatus,
   EmploymentType,
   InterviewType,
+  QualificationKind,
+  RequirementImportance,
   WorkArrangement,
 } from '@/types';
 import type { SortKey } from '@/lib/filters';
@@ -49,6 +51,19 @@ const INTERVIEW_TYPE_KEYS: Record<InterviewType, MessageKey> = {
   other: 'interviewType.other',
 };
 
+const IMPORTANCE_KEYS: Record<RequirementImportance, MessageKey> = {
+  essential: 'requirement.essential',
+  preferred: 'requirement.preferred',
+};
+
+const QUALIFICATION_KIND_KEYS: Record<QualificationKind, MessageKey> = {
+  education: 'qualification.education',
+  skill: 'qualification.skill',
+  language: 'qualification.language',
+  certification: 'qualification.certification',
+  experience: 'qualification.experience',
+};
+
 const SORT_KEYS: Record<SortKey, MessageKey> = {
   appliedDate: 'filters.sortAppliedDate',
   company: 'filters.sortCompany',
@@ -69,6 +84,14 @@ export function employmentLabel(t: Translate, value: EmploymentType): string {
 
 export function interviewTypeLabel(t: Translate, value: InterviewType): string {
   return t(INTERVIEW_TYPE_KEYS[value]);
+}
+
+export function importanceLabel(t: Translate, value: RequirementImportance): string {
+  return t(IMPORTANCE_KEYS[value]);
+}
+
+export function qualificationKindLabel(t: Translate, value: QualificationKind): string {
+  return t(QUALIFICATION_KIND_KEYS[value]);
 }
 
 export function sortLabel(t: Translate, value: SortKey): string {

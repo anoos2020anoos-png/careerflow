@@ -4,6 +4,7 @@ import type {
   EmploymentType,
   WorkArrangement,
 } from '@/types';
+import { summarizeMatch } from '@/lib/match';
 
 export const SORT_KEYS = ['appliedDate', 'company', 'updatedAt'] as const;
 export type SortKey = (typeof SORT_KEYS)[number];
@@ -14,6 +15,14 @@ export interface FilterState {
   statuses: ApplicationStatus[];
   arrangements: WorkArrangement[];
   employmentTypes: EmploymentType[];
+  /**
+   * Narrows to applications where every requirement marked essential is ticked.
+   *
+   * Applications with no requirements written down are excluded rather than
+   * included: "I meet everything this asks for" is a claim about a list, and an
+   * empty list has not made that claim.
+   */
+  onlyMeetingEssentials: boolean;
   sortKey: SortKey;
   sortDirection: SortDirection;
 }
@@ -23,6 +32,7 @@ export const DEFAULT_FILTERS: FilterState = {
   statuses: [],
   arrangements: [],
   employmentTypes: [],
+  onlyMeetingEssentials: false,
   sortKey: 'appliedDate',
   sortDirection: 'desc',
 };
@@ -32,7 +42,8 @@ export function hasActiveFilters(state: FilterState): boolean {
     state.search.trim() !== '' ||
     state.statuses.length > 0 ||
     state.arrangements.length > 0 ||
-    state.employmentTypes.length > 0
+    state.employmentTypes.length > 0 ||
+    state.onlyMeetingEssentials
   );
 }
 
@@ -89,6 +100,10 @@ export function filterApplications(
       !state.employmentTypes.includes(application.employmentType)
     ) {
       return false;
+    }
+    if (state.onlyMeetingEssentials) {
+      const match = summarizeMatch(application.requirements);
+      if (!match.hasRequirements || !match.meetsEveryEssential) return false;
     }
     return true;
   });

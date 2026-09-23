@@ -27,6 +27,7 @@ const en = {
   'nav.label': 'Main',
   'nav.dashboard': 'Dashboard',
   'nav.applications': 'Applications',
+  'nav.profile': 'Background',
   'nav.settings': 'Settings',
   'nav.current': ' (current page)',
   'shell.skip': 'Skip to main content',
@@ -368,6 +369,66 @@ const en = {
     'The single application stored here, with its interviews, follow-ups and timeline, will be removed from this browser.',
   'settings.clearConfirm': 'Clear everything',
 
+  /* Requirements and profile */
+  'requirement.essential': 'Essential',
+  'requirement.preferred': 'Preferred',
+  'qualification.education': 'Education',
+  'qualification.skill': 'Skill',
+  'qualification.language': 'Language',
+  'qualification.certification': 'Certification',
+  'qualification.experience': 'Experience',
+
+  'match.title': 'What this role asks for',
+  'match.description':
+    'Copy the requirements out of the posting and tick the ones you have. The count below is exactly that — how many of the things this posting asked for you can point to. It is not a prediction, and nothing here can tell you whether you will get the job.',
+  'match.emptyTitle': 'No requirements listed yet',
+  'match.emptyDesc':
+    'Add what the posting asks for — a degree, a language, a tool, a number of years — and CareerFlow will keep count of how many you meet.',
+  'match.essentialCount': '{met} of {total} essential',
+  'match.preferredCount': '{met} of {total} preferred',
+  'match.noEssential': 'Nothing marked essential',
+  'match.allEssential': 'You meet every essential requirement listed.',
+  'match.someEssential': '{missing} essential requirements are not ticked.',
+  'match.oneMissingEssential': '1 essential requirement is not ticked.',
+  'match.newLabel': 'Requirement from the posting',
+  'match.newPlaceholder': '3+ years with React',
+  'match.importance': 'How the posting frames it',
+  'match.removeAria': 'Remove requirement: {label}',
+  'match.metAria': 'I have this: {label}',
+  'match.autoTicked': 'Ticked from your profile',
+  'match.summaryAria': 'Requirements met for {title} at {company}',
+  'match.notAScore':
+    'This counts requirements; it does not score you and does not estimate your chances.',
+
+  'profile.title': 'Your background',
+  'profile.description':
+    'What you can point to when a posting asks for something. Kept in this browser like everything else, and used for one thing: pre-ticking a requirement when it plainly matches something here.',
+  'profile.headline': 'One-line summary',
+  'profile.headlineHint': 'Optional. How you would describe yourself to a recruiter.',
+  'profile.headlinePlaceholder': 'English literature graduate, two years in customer support',
+  'profile.qualifications': 'What you have',
+  'profile.qualificationsDesc': 'Degrees, languages, tools, certificates, experience.',
+  'profile.emptyTitle': 'Nothing added yet',
+  'profile.emptyDesc':
+    'Add a degree, a language you speak, a tool you know. Each one you add can pre-tick a matching requirement on an application.',
+  'profile.newLabel': 'Add something you have',
+  'profile.newPlaceholder': "Bachelor's degree in English",
+  'profile.kind': 'Kind',
+  'profile.removeAria': 'Remove from your background: {label}',
+  'profile.count': '{count} entries',
+  'profile.oneEntry': '1 entry',
+  'profile.privacy':
+    'This stays in your browser. It is never uploaded, and it is included in your JSON export only if you have added something to it.',
+
+  'filters.onlyMeetingEssentials': 'Only where I meet every essential',
+  'filters.onlyMeetingEssentialsHint':
+    'Applications with no requirements written down are not shown, since they have not stated anything to meet.',
+
+  'timeline.requirementAdded': 'Requirement added: {detail}',
+  'timeline.requirementRemoved': 'Requirement removed: {detail}',
+  'timeline.requirementMet': 'Marked as met: {detail}',
+  'timeline.requirementUnmet': 'Marked as not met: {detail}',
+
   /* Validation. Rendered directly beneath the field's own label, so the
      wording deliberately does not repeat the field name. */
   'validation.required': 'Required',
@@ -395,6 +456,7 @@ const ar: Record<MessageKey, string> = {
   'nav.label': 'التنقل الرئيسي',
   'nav.dashboard': 'لوحة التحكم',
   'nav.applications': 'الطلبات',
+  'nav.profile': 'خلفيتك',
   'nav.settings': 'الإعدادات',
   'nav.current': ' (الصفحة الحالية)',
   'shell.skip': 'تخطَّ إلى المحتوى',
@@ -721,6 +783,65 @@ const ar: Record<MessageKey, string> = {
   'settings.clearConfirmDescOne':
     'سيُحذف الطلب الوحيد المحفوظ هنا، مع مقابلاته ومهامه وسجله، من هذا المتصفح.',
   'settings.clearConfirm': 'مسح كل شيء',
+
+  /* Requirements and profile */
+  'requirement.essential': 'أساسي',
+  'requirement.preferred': 'مُفضَّل',
+  'qualification.education': 'تعليم',
+  'qualification.skill': 'مهارة',
+  'qualification.language': 'لغة',
+  'qualification.certification': 'شهادة',
+  'qualification.experience': 'خبرة',
+
+  'match.title': 'ما يطلبه هذا الدور',
+  'match.description':
+    'انقل المتطلبات من إعلان الوظيفة وأشِّر على ما تملكه. العدد بالأسفل هو هذا بالضبط: كم من الأشياء التي طلبها الإعلان تستطيع الإشارة إليها. ليس تنبؤًا، ولا شيء هنا يقدر أن يخبرك هل ستحصل على الوظيفة.',
+  'match.emptyTitle': 'لا توجد متطلبات مُدخلة بعد',
+  'match.emptyDesc':
+    'أضف ما يطلبه الإعلان — شهادة، لغة، أداة، عدد سنوات — وسيحسب CareerFlow كم منها تحقق.',
+  'match.essentialCount': '{met} من {total} أساسي',
+  'match.preferredCount': '{met} من {total} مُفضَّل',
+  'match.noEssential': 'لا شيء محدد كأساسي',
+  'match.allEssential': 'تحقق كل المتطلبات الأساسية المُدخلة.',
+  'match.someEssential': '{missing} متطلبات أساسية غير مؤشَّرة.',
+  'match.oneMissingEssential': 'متطلب أساسي واحد غير مؤشَّر.',
+  'match.newLabel': 'متطلب من الإعلان',
+  'match.newPlaceholder': 'خبرة ٣ سنوات فأكثر في React',
+  'match.importance': 'كيف يصفه الإعلان',
+  'match.removeAria': 'إزالة المتطلب: {label}',
+  'match.metAria': 'أملك هذا: {label}',
+  'match.autoTicked': 'مؤشَّر من ملفك',
+  'match.summaryAria': 'المتطلبات المحققة لـ {title} في {company}',
+  'match.notAScore': 'هذا يعدّ المتطلبات؛ لا يقيّمك ولا يقدّر فرصك.',
+
+  'profile.title': 'خلفيتك',
+  'profile.description':
+    'ما تستطيع الإشارة إليه حين يطلب إعلان شيئًا. محفوظ في هذا المتصفح مثل كل شيء آخر، ويُستخدم لغرض واحد: التأشير المسبق على متطلب يطابق شيئًا هنا بوضوح.',
+  'profile.headline': 'وصف بسطر واحد',
+  'profile.headlineHint': 'اختياري. كيف تصف نفسك لمسؤول التوظيف.',
+  'profile.headlinePlaceholder': 'خريج أدب إنجليزي، سنتان في خدمة العملاء',
+  'profile.qualifications': 'ما تملكه',
+  'profile.qualificationsDesc': 'الشهادات، اللغات، الأدوات، الدورات، الخبرات.',
+  'profile.emptyTitle': 'لم تُضف شيئًا بعد',
+  'profile.emptyDesc':
+    'أضف شهادة، أو لغة تتقنها، أو أداة تعرفها. كل إضافة يمكن أن تؤشِّر تلقائيًا على متطلب مطابق في أي طلب.',
+  'profile.newLabel': 'أضف شيئًا تملكه',
+  'profile.newPlaceholder': 'بكالوريوس أدب إنجليزي',
+  'profile.kind': 'النوع',
+  'profile.removeAria': 'إزالة من خلفيتك: {label}',
+  'profile.count': '{count} مُدخلات',
+  'profile.oneEntry': 'مُدخل واحد',
+  'profile.privacy':
+    'يبقى هذا في متصفحك. لا يُرفع أبدًا، ولا يُدرج في ملف التصدير إلا إذا أضفت إليه شيئًا.',
+
+  'filters.onlyMeetingEssentials': 'فقط ما أحقق كل أساسياته',
+  'filters.onlyMeetingEssentialsHint':
+    'الطلبات التي لم تُدخل لها متطلبات لا تظهر، لأنها لم تذكر شيئًا لتحقيقه.',
+
+  'timeline.requirementAdded': 'أُضيف متطلب: {detail}',
+  'timeline.requirementRemoved': 'أُزيل متطلب: {detail}',
+  'timeline.requirementMet': 'تم التأشير كمُحقَّق: {detail}',
+  'timeline.requirementUnmet': 'تم التأشير كغير مُحقَّق: {detail}',
 
   /* Validation */
   'validation.required': 'مطلوب',

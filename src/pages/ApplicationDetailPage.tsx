@@ -14,6 +14,7 @@ import { InterviewsPanel } from '@/features/detail/InterviewsPanel';
 import { TasksPanel } from '@/features/detail/TasksPanel';
 import { TimelinePanel } from '@/features/detail/TimelinePanel';
 import { NotesPanel } from '@/features/detail/NotesPanel';
+import { RequirementsPanel } from '@/features/detail/RequirementsPanel';
 import { useAppData } from '@/state/app-data-context';
 import { useT } from '@/i18n/i18n-context';
 import { arrangementLabel, employmentLabel, relativeDay, salaryLabels } from '@/i18n/labels';
@@ -45,6 +46,9 @@ export function ApplicationDetailPage() {
     addTask,
     toggleTask,
     removeTask,
+    addRequirement,
+    toggleRequirement,
+    removeRequirement,
   } = useAppData();
 
   const t = useT();
@@ -184,6 +188,13 @@ export function ApplicationDetailPage() {
           <NotesPanel
             notes={application.notes}
             onSave={(value) => setNotes(application.id, value)}
+          />
+
+          <RequirementsPanel
+            requirements={application.requirements}
+            onAdd={(values) => addRequirement(application.id, values)}
+            onToggle={(requirementId) => toggleRequirement(application.id, requirementId)}
+            onRemove={(requirementId) => removeRequirement(application.id, requirementId)}
           />
 
           <InterviewsPanel

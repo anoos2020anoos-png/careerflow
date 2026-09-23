@@ -6,6 +6,7 @@ import { I18nProvider } from '@/i18n/I18nProvider';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { ApplicationsPage } from '@/pages/ApplicationsPage';
 import { ApplicationDetailPage } from '@/pages/ApplicationDetailPage';
+import { ProfilePage } from '@/pages/ProfilePage';
 import { SettingsPage } from '@/pages/SettingsPage';
 
 /**
@@ -25,6 +26,7 @@ export default function App() {
                 <Route index element={<DashboardPage />} />
                 <Route path="applications" element={<ApplicationsPage />} />
                 <Route path="applications/:applicationId" element={<ApplicationDetailPage />} />
+                <Route path="profile" element={<ProfilePage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>

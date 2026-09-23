@@ -3,11 +3,12 @@ import {
   DEFAULT_FILTERS,
   filterAndSortApplications,
   filterApplications,
+  hasActiveFilters,
   matchesSearch,
   sortApplications,
   toggleValue,
 } from '@/lib/filters';
-import { makeApplication } from '@/test/factories';
+import { makeApplication, makeRequirement } from '@/test/factories';
 
 const northwind = makeApplication({
   id: 'a',
@@ -157,5 +158,48 @@ describe('toggleValue', () => {
   it('adds a missing value and removes a present one', () => {
     expect(toggleValue<string>([], 'a')).toEqual(['a']);
     expect(toggleValue(['a', 'b'], 'a')).toEqual(['b']);
+  });
+});
+
+describe('the "only where I meet every essential" filter', () => {
+  const ready = makeApplication({
+    id: 'ready',
+    requirements: [
+      makeRequirement('React', 'essential', true),
+      makeRequirement('Figma', 'preferred', false),
+    ],
+  });
+
+  const shortOne = makeApplication({
+    id: 'short',
+    requirements: [
+      makeRequirement('React', 'essential', true),
+      makeRequirement('Kubernetes', 'essential', false),
+    ],
+  });
+
+  const unlisted = makeApplication({ id: 'unlisted', requirements: [] });
+
+  const onlyEssentials = { ...DEFAULT_FILTERS, onlyMeetingEssentials: true };
+
+  it('keeps an application whose essential requirements are all ticked', () => {
+    const kept = filterApplications([ready, shortOne], onlyEssentials);
+    expect(kept.map((entry) => entry.id)).toEqual(['ready']);
+  });
+
+  it('ignores unticked preferred requirements', () => {
+    expect(filterApplications([ready], onlyEssentials)).toHaveLength(1);
+  });
+
+  it('excludes an application with no requirements written down', () => {
+    // An empty list has not claimed to be met; treating it as a pass would put
+    // applications in front of the user that they never actually checked.
+    expect(filterApplications([unlisted], onlyEssentials)).toHaveLength(0);
+  });
+
+  it('is off by default and counts as an active filter when on', () => {
+    expect(DEFAULT_FILTERS.onlyMeetingEssentials).toBe(false);
+    expect(hasActiveFilters(DEFAULT_FILTERS)).toBe(false);
+    expect(hasActiveFilters(onlyEssentials)).toBe(true);
   });
 });

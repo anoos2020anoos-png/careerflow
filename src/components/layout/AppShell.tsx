@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Briefcase, LayoutDashboard, Settings } from 'lucide-react';
+import { Briefcase, LayoutDashboard, Settings, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Logo } from '@/components/layout/Logo';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
@@ -19,6 +19,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, end: true },
   { to: '/applications', labelKey: 'nav.applications', icon: Briefcase },
+  { to: '/profile', labelKey: 'nav.profile', icon: UserRound },
   { to: '/settings', labelKey: 'nav.settings', icon: Settings },
 ];
 

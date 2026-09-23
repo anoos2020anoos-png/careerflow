@@ -41,6 +41,18 @@ export const INTERVIEW_TYPES = [
 ] as const;
 export type InterviewType = (typeof INTERVIEW_TYPES)[number];
 
+export const REQUIREMENT_IMPORTANCES = ['essential', 'preferred'] as const;
+export type RequirementImportance = (typeof REQUIREMENT_IMPORTANCES)[number];
+
+export const QUALIFICATION_KINDS = [
+  'education',
+  'skill',
+  'language',
+  'certification',
+  'experience',
+] as const;
+export type QualificationKind = (typeof QUALIFICATION_KINDS)[number];
+
 export const ACTIVITY_KINDS = [
   'created',
   'updated',
@@ -51,6 +63,10 @@ export const ACTIVITY_KINDS = [
   'task_completed',
   'task_reopened',
   'task_removed',
+  'requirement_added',
+  'requirement_removed',
+  'requirement_met',
+  'requirement_unmet',
 ] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
 
@@ -73,6 +89,49 @@ export interface FollowUpTask {
   completed: boolean;
   completedAt?: string;
   createdAt: string;
+}
+
+/**
+ * One line lifted from a job posting, and whether the applicant has it.
+ *
+ * `met` is the applicant's own answer, never a guess the app commits to. When a
+ * requirement is added it is pre-ticked if the wording matches something in the
+ * profile, but that is a starting point the user is free to correct — which is
+ * why it is stored as a plain boolean rather than a link to a qualification.
+ */
+export interface Requirement {
+  id: string;
+  /** The requirement in the posting's own words. */
+  label: string;
+  /** Whether the posting calls it essential or merely preferred. */
+  importance: RequirementImportance;
+  met: boolean;
+  createdAt: string;
+}
+
+/** Something the applicant has: a degree, a skill, a language, a certificate. */
+export interface Qualification {
+  id: string;
+  label: string;
+  kind: QualificationKind;
+  createdAt: string;
+}
+
+/**
+ * The applicant's own background, kept once rather than per application.
+ *
+ * It exists to answer one question honestly — "which of the things this posting
+ * asks for do I actually have?" — and never to score the person.
+ */
+export interface Profile {
+  /** A one-line summary in the applicant's own words. Optional. */
+  headline?: string;
+  qualifications: Qualification[];
+  updatedAt: string;
+}
+
+export function emptyProfile(at: string): Profile {
+  return { qualifications: [], updatedAt: at };
 }
 
 export interface ActivityEntry {
@@ -106,6 +165,8 @@ export interface Application {
   updatedAt: string;
   interviews: Interview[];
   tasks: FollowUpTask[];
+  /** What the posting asks for. Empty until the applicant fills it in. */
+  requirements: Requirement[];
   activity: ActivityEntry[];
 }
 
@@ -113,6 +174,7 @@ export interface Application {
 export interface PersistedData {
   version: number;
   applications: Application[];
+  profile: Profile;
 }
 
 /**

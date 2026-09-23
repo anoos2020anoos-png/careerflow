@@ -25,8 +25,15 @@ import { downloadJson, exportFileName, parseImport, serializeExport } from '@/li
 import { DEMO_APPLICATION_COUNT } from '@/lib/demoData';
 import { DATA_VERSION } from '@/lib/schemas';
 import { STORAGE_KEY } from '@/lib/storage';
-import type { Application } from '@/types';
+
+import type { Application, Profile } from '@/types';
 import { cn } from '@/lib/cn';
+
+/** What a validated file carries: the records, and a profile if it had one. */
+interface PendingImport {
+  applications: Application[];
+  profile?: Profile;
+}
 
 type ImportFeedback =
   | { kind: 'idle' }
@@ -72,18 +79,18 @@ function ChoiceButton({
 }
 
 export function SettingsPage() {
-  const { applications, replaceAll, clearAll, resetToDemo } = useAppData();
+  const { applications, profile, replaceAll, clearAll, resetToDemo } = useAppData();
   const { mode, setMode } = useTheme();
   const { locale, setLocale, t } = useI18n();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [feedback, setFeedback] = useState<ImportFeedback>({ kind: 'idle' });
-  const [pendingImport, setPendingImport] = useState<Application[] | null>(null);
+  const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
 
   const handleExport = () => {
-    downloadJson(exportFileName(), serializeExport(applications));
+    downloadJson(exportFileName(), serializeExport(applications, profile));
   };
 
   const handleFile = async (file: File) => {
@@ -106,13 +113,13 @@ export function SettingsPage() {
       setFeedback({ kind: 'error', message: result.message, details: result.details });
       return;
     }
-    setPendingImport(result.applications);
+    setPendingImport({ applications: result.applications, profile: result.profile });
   };
 
   const confirmImport = () => {
     if (!pendingImport) return;
-    const count = pendingImport.length;
-    replaceAll(pendingImport);
+    const count = pendingImport.applications.length;
+    replaceAll(pendingImport.applications, pendingImport.profile);
     setPendingImport(null);
     setFeedback({
       kind: 'success',
@@ -294,7 +301,7 @@ export function SettingsPage() {
         description={
           pendingImport
             ? t('settings.importConfirmDesc', {
-                incoming: pendingImport.length,
+                incoming: pendingImport.applications.length,
                 current: applications.length,
               })
             : ''

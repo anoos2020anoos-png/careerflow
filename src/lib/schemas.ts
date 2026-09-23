@@ -4,6 +4,8 @@ import {
   APPLICATION_STATUSES,
   EMPLOYMENT_TYPES,
   INTERVIEW_TYPES,
+  QUALIFICATION_KINDS,
+  REQUIREMENT_IMPORTANCES,
   WORK_ARRANGEMENTS,
 } from '@/types';
 import { isValidDateOnly, isValidTime } from '@/lib/dates';
@@ -151,6 +153,26 @@ export const taskFormSchema = z.object({
 
 export type TaskFormValues = z.infer<typeof taskFormSchema>;
 
+export const requirementFormSchema = z.object({
+  label: requiredText(200),
+  importance: z.enum(REQUIREMENT_IMPORTANCES),
+});
+
+export type RequirementFormValues = z.infer<typeof requirementFormSchema>;
+
+export const qualificationFormSchema = z.object({
+  label: requiredText(200),
+  kind: z.enum(QUALIFICATION_KINDS),
+});
+
+export type QualificationFormValues = z.infer<typeof qualificationFormSchema>;
+
+export const profileFormSchema = z.object({
+  headline: optionalText(300),
+});
+
+export type ProfileFormValues = z.infer<typeof profileFormSchema>;
+
 /* ================================================================== */
 /* Persistence schemas                                                 */
 /* ================================================================== */
@@ -188,6 +210,27 @@ export const activitySchema = z.object({
   detail: z.string().max(500).optional(),
 });
 
+export const requirementSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1).max(500),
+  importance: z.enum(REQUIREMENT_IMPORTANCES),
+  met: z.boolean(),
+  createdAt: isoInstant,
+});
+
+export const qualificationSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1).max(500),
+  kind: z.enum(QUALIFICATION_KINDS),
+  createdAt: isoInstant,
+});
+
+export const profileSchema = z.object({
+  headline: z.string().max(1000).optional(),
+  qualifications: z.array(qualificationSchema),
+  updatedAt: isoInstant,
+});
+
 export const applicationSchema = z.object({
   id: z.string().min(1),
   company: z.string().min(1).max(200),
@@ -207,13 +250,24 @@ export const applicationSchema = z.object({
   updatedAt: isoInstant,
   interviews: z.array(interviewSchema),
   tasks: z.array(taskSchema),
+  // Optional on the way in so a version 1 payload still parses; `migrate()`
+  // fills it with an empty array before the record reaches the app.
+  requirements: z.array(requirementSchema).optional(),
   activity: z.array(activitySchema),
 });
 
-/** Current on-disk format version. Bump when the persisted shape changes. */
-export const DATA_VERSION = 1;
+/**
+ * Current on-disk format version.
+ *
+ * 1 — applications only.
+ * 2 — adds `Application.requirements` and a top-level `profile`. Both are
+ *     optional in the schema and filled in by `migrate()`, so a version 1
+ *     payload loads without the user losing anything.
+ */
+export const DATA_VERSION = 2;
 
 export const persistedDataSchema = z.object({
   version: z.number().int().positive(),
   applications: z.array(applicationSchema),
+  profile: profileSchema.optional(),
 });

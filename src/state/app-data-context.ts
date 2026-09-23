@@ -1,8 +1,10 @@
 import { createContext, useContext } from 'react';
-import type { Application, ApplicationStatus } from '@/types';
+import type { Application, ApplicationStatus, Profile } from '@/types';
 import type {
   ApplicationFormValues,
   InterviewFormValues,
+  QualificationFormValues,
+  RequirementFormValues,
   TaskFormValues,
 } from '@/lib/schemas';
 
@@ -27,7 +29,17 @@ export interface AppDataValue {
   toggleTask: (id: string, taskId: string) => void;
   removeTask: (id: string, taskId: string) => void;
 
-  replaceAll: (applications: Application[]) => void;
+  addRequirement: (id: string, values: RequirementFormValues) => void;
+  toggleRequirement: (id: string, requirementId: string) => void;
+  removeRequirement: (id: string, requirementId: string) => void;
+
+  /** The applicant's own background, used to pre-tick matching requirements. */
+  profile: Profile;
+  setHeadline: (headline: string) => void;
+  addQualification: (values: QualificationFormValues) => void;
+  removeQualification: (qualificationId: string) => void;
+
+  replaceAll: (applications: Application[], profile?: Profile) => void;
   clearAll: () => void;
   resetToDemo: () => void;
 }

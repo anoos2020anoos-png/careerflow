@@ -1,4 +1,12 @@
-import type { Application, ApplicationStatus } from '@/types';
+import type {
+  Application,
+  ApplicationStatus,
+  Profile,
+  Qualification,
+  QualificationKind,
+  Requirement,
+  RequirementImportance,
+} from '@/types';
 
 let counter = 0;
 
@@ -17,6 +25,7 @@ export function makeApplication(overrides: Partial<Application> = {}): Applicati
     updatedAt: '2026-03-01T09:00:00.000Z',
     interviews: [],
     tasks: [],
+    requirements: [],
     activity: [
       {
         id: `act-${counter}`,
@@ -30,4 +39,37 @@ export function makeApplication(overrides: Partial<Application> = {}): Applicati
 
 export function resetFactoryCounter(): void {
   counter = 0;
+}
+
+/** Builds a requirement for tests. `met` defaults to false. */
+export function makeRequirement(
+  label: string,
+  importance: RequirementImportance = 'essential',
+  met = false,
+): Requirement {
+  counter += 1;
+  return {
+    id: `req-${counter}`,
+    label,
+    importance,
+    met,
+    createdAt: '2026-03-01T09:00:00.000Z',
+  };
+}
+
+export function makeQualification(
+  label: string,
+  kind: QualificationKind = 'skill',
+): Qualification {
+  counter += 1;
+  return {
+    id: `qual-${counter}`,
+    label,
+    kind,
+    createdAt: '2026-03-01T09:00:00.000Z',
+  };
+}
+
+export function makeProfile(qualifications: Qualification[] = []): Profile {
+  return { qualifications, updatedAt: '2026-03-01T09:00:00.000Z' };
 }

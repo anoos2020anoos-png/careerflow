@@ -6,6 +6,8 @@ import type {
   FollowUpTask,
   Interview,
   InterviewType,
+  Requirement,
+  RequirementImportance,
   WorkArrangement,
 } from '@/types';
 import { addDays, parseDateOnly, todayDateOnly } from '@/lib/dates';
@@ -60,6 +62,18 @@ interface SeedApplication {
   tasks?: SeedTask[];
   /** Days before today each status transition happened, oldest first. */
   transitions?: { to: ApplicationStatus; daysAgo: number }[];
+  /**
+   * Lines lifted from the (invented) posting, and whether this fictional
+   * applicant ticked them. Only a few seeds carry these, so the sample data
+   * shows both a filled-in requirements panel and an empty one.
+   */
+  requirements?: SeedRequirement[];
+}
+
+interface SeedRequirement {
+  label: string;
+  importance: RequirementImportance;
+  met: boolean;
 }
 
 const SEEDS: SeedApplication[] = [
@@ -82,6 +96,14 @@ const SEEDS: SeedApplication[] = [
       { to: 'applied', daysAgo: 26 },
       { to: 'screening', daysAgo: 19 },
       { to: 'interview', daysAgo: 8 },
+    ],
+    requirements: [
+      { label: '5+ years building production React applications', importance: 'essential', met: true },
+      { label: 'TypeScript in a large codebase', importance: 'essential', met: true },
+      { label: 'Experience owning a design system', importance: 'essential', met: true },
+      { label: 'Able to work from Riyadh three days a week', importance: 'essential', met: true },
+      { label: 'Arabic and English in a professional setting', importance: 'preferred', met: true },
+      { label: 'Contributed to an open-source component library', importance: 'preferred', met: false },
     ],
     interviews: [
       {
@@ -333,6 +355,16 @@ const SEEDS: SeedApplication[] = [
       { to: 'applied', daysAgo: 47 },
       { to: 'rejected', daysAgo: 5 },
     ],
+    requirements: [
+      {
+        label: 'Bachelor’s degree in computer science or a related field',
+        importance: 'essential',
+        met: true,
+      },
+      { label: 'C++ or Rust in an embedded context', importance: 'essential', met: false },
+      { label: 'Security clearance eligibility', importance: 'essential', met: false },
+      { label: 'Arabic and English', importance: 'preferred', met: true },
+    ],
   },
   {
     company: 'Hadeel Technologies',
@@ -405,6 +437,16 @@ function buildTasks(seed: SeedApplication, today: string): FollowUpTask[] {
   });
 }
 
+function buildRequirements(seed: SeedApplication, appliedDate: string): Requirement[] {
+  return (seed.requirements ?? []).map((entry) => ({
+    id: createId(),
+    label: entry.label,
+    importance: entry.importance,
+    met: entry.met,
+    createdAt: instantFrom(appliedDate, 10),
+  }));
+}
+
 function buildActivity(seed: SeedApplication, today: string, appliedDate: string): ActivityEntry[] {
   const activity: ActivityEntry[] = [
     {
@@ -449,6 +491,7 @@ export function createDemoApplications(today = todayDateOnly()): Application[] {
       updatedAt: lastActivity?.at ?? instantFrom(appliedDate, 9),
       interviews: buildInterviews(seed, today),
       tasks: buildTasks(seed, today),
+      requirements: buildRequirements(seed, appliedDate),
       activity,
     };
 

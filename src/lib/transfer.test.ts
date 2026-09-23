@@ -7,7 +7,7 @@ import {
   type ImportResult,
 } from '@/lib/transfer';
 import { DATA_VERSION } from '@/lib/schemas';
-import { makeApplication } from '@/test/factories';
+import { makeApplication, makeProfile, makeQualification } from '@/test/factories';
 
 /** Asserts the import was rejected and hands back the failure for inspection. */
 function rejection(result: ImportResult): Extract<ImportResult, { ok: false }> {
@@ -121,5 +121,32 @@ describe('parseImport — rejection', () => {
 
   it('never returns records alongside a failure, so callers cannot lose data', () => {
     expect(rejection(parseImport('not json at all'))).not.toHaveProperty('applications');
+  });
+});
+
+describe('the profile in an export', () => {
+  it('is left out when there is nothing in it', () => {
+    const envelope = JSON.parse(serializeExport([makeApplication()], makeProfile()));
+    expect('profile' in envelope).toBe(false);
+  });
+
+  it('round-trips when it has something in it', () => {
+    const profile = makeProfile([makeQualification('TypeScript')]);
+    const result = accepted(parseImport(serializeExport([makeApplication()], profile)));
+    expect(result.profile?.qualifications[0]?.label).toBe('TypeScript');
+  });
+
+  it('is absent from the result when the file carried none, so the caller keeps its own', () => {
+    const result = accepted(parseImport(serializeExport([makeApplication()])));
+    expect(result.profile).toBeUndefined();
+  });
+
+  it('fills in requirements on records from a version 1 file', () => {
+    const legacy = { ...makeApplication({ id: 'old' }) } as Record<string, unknown>;
+    delete legacy.requirements;
+    const result = accepted(
+      parseImport(JSON.stringify({ version: 1, applications: [legacy] })),
+    );
+    expect(result.applications[0]?.requirements).toEqual([]);
   });
 });

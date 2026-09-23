@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import type { Application } from '@/types';
-import { applicationSchema, DATA_VERSION } from '@/lib/schemas';
+import type { Application, Profile } from '@/types';
+import { applicationSchema, DATA_VERSION, profileSchema } from '@/lib/schemas';
 
 export const EXPORT_APP_ID = 'careerflow';
 
@@ -9,19 +9,26 @@ export interface ExportEnvelope {
   version: number;
   exportedAt: string;
   applications: Application[];
+  profile?: Profile;
 }
 
-export function buildExport(applications: Application[]): ExportEnvelope {
-  return {
+export function buildExport(applications: Application[], profile?: Profile): ExportEnvelope {
+  const envelope: ExportEnvelope = {
     app: EXPORT_APP_ID,
     version: DATA_VERSION,
     exportedAt: new Date().toISOString(),
     applications,
   };
+  // Left out entirely when there is nothing in it, so an export from someone
+  // who never filled in a profile does not carry an empty shell around.
+  if (profile && (profile.headline || profile.qualifications.length > 0)) {
+    envelope.profile = profile;
+  }
+  return envelope;
 }
 
-export function serializeExport(applications: Application[]): string {
-  return JSON.stringify(buildExport(applications), null, 2);
+export function serializeExport(applications: Application[], profile?: Profile): string {
+  return JSON.stringify(buildExport(applications, profile), null, 2);
 }
 
 export function exportFileName(now = new Date()): string {
@@ -46,13 +53,18 @@ const importSchema = z.union([
     version: z.number().int().positive(),
     exportedAt: z.string().optional(),
     applications: z.array(applicationSchema),
+    profile: profileSchema.optional(),
   }),
-  z.object({ applications: z.array(applicationSchema) }),
+  z.object({
+    applications: z.array(applicationSchema),
+    profile: profileSchema.optional(),
+  }),
   z.array(applicationSchema),
 ]);
 
 export type ImportResult =
-  | { ok: true; applications: Application[] }
+  /** `profile` is absent when the file carried none; the caller keeps its own. */
+  | { ok: true; applications: Application[]; profile?: Profile }
   | { ok: false; message: string; details: string[] };
 
 function describeIssue(issue: z.ZodIssue): string {
@@ -129,7 +141,17 @@ export function parseImport(text: string): ImportResult {
     seen.add(application.id);
   }
 
-  return { ok: true, applications: applications as Application[] };
+  // Version 1 files have no `requirements`; fill it in so the rest of the app
+  // never has to check, exactly as `storage.normalize` does on load.
+  const normalized: Application[] = (applications as Application[]).map((application) => ({
+    ...application,
+    requirements: application.requirements ?? [],
+  }));
+
+  const profile = !Array.isArray(result.data) ? result.data.profile : undefined;
+  return profile
+    ? { ok: true, applications: normalized, profile }
+    : { ok: true, applications: normalized };
 }
 
 /** Triggers a client-side download without any server round trip. */
