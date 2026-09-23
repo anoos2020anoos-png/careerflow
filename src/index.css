@@ -91,9 +91,25 @@
   }
 
   .cf-skip-link {
-    @apply sr-only focus:not-sr-only focus:absolute focus:start-4 focus:top-4 focus:z-50
+    @apply sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50
            focus:rounded-md focus:bg-brand focus:px-4 focus:py-2 focus:text-sm
            focus:font-medium focus:text-white;
+  }
+
+  /*
+   * Charts stay left-to-right in both languages.
+   *
+   * Recharts positions its tick labels with `text-anchor: start|end`, which
+   * assumes a left-to-right coordinate system: inside an RTL document those
+   * anchors flip, and the category labels get drawn underneath the bars
+   * instead of beside them. Pinning the chart to `ltr` keeps the library in
+   * the geometry it was built for. Only the label text is translated, and a
+   * left-to-right value axis is a normal choice in Arabic interfaces anyway.
+   * Everything around the chart — card, heading, description and the
+   * screen-reader table — still mirrors with the rest of the page.
+   */
+  .cf-chart {
+    direction: ltr;
   }
 
   /* Recharts injects inline SVG text; keep it on the muted ink token. */

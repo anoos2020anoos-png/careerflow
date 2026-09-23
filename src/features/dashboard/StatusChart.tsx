@@ -11,7 +11,7 @@ import {
 import { Card, CardHeader } from '@/components/ui/Card';
 import { useTheme } from '@/state/theme-context';
 import { paletteFor } from '@/features/dashboard/chartTheme';
-import { useI18n } from '@/i18n/i18n-context';
+import { useT } from '@/i18n/i18n-context';
 import { plural, statusLabel } from '@/i18n/labels';
 import type { StatusBreakdownEntry } from '@/lib/metrics';
 
@@ -24,12 +24,11 @@ import type { StatusBreakdownEntry } from '@/lib/metrics';
  */
 export function StatusChart({ data }: { data: StatusBreakdownEntry[] }) {
   const { resolved } = useTheme();
-  const { t, dir } = useI18n();
+  const t = useT();
   const palette = paletteFor(resolved);
   const total = data.reduce((sum, entry) => sum + entry.count, 0);
   const max = Math.max(1, ...data.map((entry) => entry.count));
   const rows = data.map((entry) => ({ ...entry, label: statusLabel(t, entry.status) }));
-  const rtl = dir === 'rtl';
 
   return (
     <Card>
@@ -46,7 +45,7 @@ export function StatusChart({ data }: { data: StatusBreakdownEntry[] }) {
               margin={{ top: 4, right: 32, bottom: 0, left: 8 }}
               barCategoryGap={6}
             >
-              <XAxis type="number" hide domain={[0, max]} allowDecimals={false} reversed={rtl} />
+              <XAxis type="number" hide domain={[0, max]} allowDecimals={false} />
               <YAxis
                 type="category"
                 dataKey="label"
@@ -54,7 +53,6 @@ export function StatusChart({ data }: { data: StatusBreakdownEntry[] }) {
                 axisLine={false}
                 width={78}
                 stroke={palette.axis}
-                orientation={rtl ? 'right' : 'left'}
               />
               <Tooltip
                 cursor={{ fill: palette.grid, fillOpacity: 0.35 }}
@@ -72,7 +70,7 @@ export function StatusChart({ data }: { data: StatusBreakdownEntry[] }) {
               />
               <Bar
                 dataKey="count"
-                radius={rtl ? [4, 0, 0, 4] : [0, 4, 4, 0]}
+                radius={[0, 4, 4, 0]}
                 maxBarSize={18}
                 name={t('nav.applications')}
               >
@@ -81,7 +79,7 @@ export function StatusChart({ data }: { data: StatusBreakdownEntry[] }) {
                 ))}
                 <LabelList
                   dataKey="count"
-                  position={rtl ? 'left' : 'right'}
+                  position="right"
                   offset={8}
                   className="fill-ink"
                   style={{ fontSize: 12, fontWeight: 500 }}

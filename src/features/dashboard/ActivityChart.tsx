@@ -10,7 +10,7 @@ import {
 import { Card, CardHeader } from '@/components/ui/Card';
 import { useTheme } from '@/state/theme-context';
 import { paletteFor } from '@/features/dashboard/chartTheme';
-import { useI18n } from '@/i18n/i18n-context';
+import { useT } from '@/i18n/i18n-context';
 import { plural } from '@/i18n/labels';
 import type { ActivityBucket } from '@/lib/metrics';
 import { formatDateOnly } from '@/lib/dates';
@@ -23,7 +23,7 @@ import { formatDateOnly } from '@/lib/dates';
  */
 export function ActivityChart({ data }: { data: ActivityBucket[] }) {
   const { resolved } = useTheme();
-  const { t, dir } = useI18n();
+  const t = useT();
   const palette = paletteFor(resolved);
   const total = data.reduce((sum, bucket) => sum + bucket.count, 0);
 
@@ -36,13 +36,7 @@ export function ActivityChart({ data }: { data: ActivityBucket[] }) {
       <div className="px-2 py-4">
         <div className="cf-chart h-56 w-full" aria-hidden="true">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={data}
-              margin={{ top: 8, right: 12, bottom: 0, left: -18 }}
-              /* Recharts has no logical properties: in Arabic the categories run
-                 right to left and the value axis moves to the right. */
-              reverseStackOrder={dir === 'rtl'}
-            >
+            <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -18 }}>
               <CartesianGrid vertical={false} stroke={palette.grid} strokeDasharray="3 3" />
               <XAxis
                 dataKey="label"
@@ -51,7 +45,6 @@ export function ActivityChart({ data }: { data: ActivityBucket[] }) {
                 interval="preserveStartEnd"
                 minTickGap={16}
                 stroke={palette.axis}
-                reversed={dir === 'rtl'}
               />
               <YAxis
                 allowDecimals={false}
@@ -59,7 +52,6 @@ export function ActivityChart({ data }: { data: ActivityBucket[] }) {
                 axisLine={false}
                 width={44}
                 stroke={palette.axis}
-                orientation={dir === 'rtl' ? 'right' : 'left'}
               />
               <Tooltip
                 cursor={{ fill: palette.grid, fillOpacity: 0.35 }}
@@ -81,7 +73,7 @@ export function ActivityChart({ data }: { data: ActivityBucket[] }) {
                 fill={palette.series}
                 radius={[4, 4, 0, 0]}
                 maxBarSize={22}
-                name={t("nav.applications")}
+                name={t('nav.applications')}
               />
             </BarChart>
           </ResponsiveContainer>
