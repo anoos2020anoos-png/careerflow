@@ -7,8 +7,11 @@ do not get forgotten, and a dashboard that answers "how is this actually going?"
 It runs entirely in the browser. There is no account, no backend and no API key —
 open it and start using it.
 
-- **Live demo:** _not published yet — see [Deployment](#deployment)._
-- **Repository:** _not published yet — see [Publishing to GitHub](#publishing-to-github)._
+- **Live demo:** <https://anoos2020anoos-png.github.io/careerflow/>
+- **Repository:** <https://github.com/anoos2020anoos-png/careerflow>
+
+The interface is available in **English and Arabic**, with the whole layout
+mirroring to right-to-left for Arabic.
 
 ---
 
@@ -60,9 +63,27 @@ visitor can try in ten seconds and that keeps their data on their own machine.
 - Application activity by week over the last 12 weeks.
 - Applications grouped by status.
 - Upcoming interviews and open follow-ups, linked straight to their application.
+- A track record built from your own history: how often an application got a
+  reply, reached an interview, or reached an offer — each shown as a count over
+  its denominator ("3 of 12"), with the definition beside it, the median wait for
+  a first reply, and a warning while the sample is too small for the percentages
+  to mean anything. It reports what has happened; it does not predict anything.
 
 Every figure is derived from the stored records on each render, so the dashboard
 updates the moment anything changes.
+
+**Language**
+
+- English and Arabic, switched from Settings or the top bar and remembered
+  between visits.
+- Arabic sets `lang` and `dir` on the document, and the layout mirrors from CSS
+  logical properties rather than a second stylesheet: one set of styles serves
+  both directions.
+- Dates, times and currency follow the chosen language. Arabic uses Arabic month
+  names with Western digits on the Gregorian calendar — not the Hijri calendar,
+  which is what `ar-SA` would have given.
+- The browser's own language is used on a first visit, so an Arabic-speaking
+  visitor lands in Arabic; English is the fallback for everyone else.
 
 **Data and appearance**
 
@@ -126,7 +147,13 @@ src/
 ├── main.tsx                  Entry point: mounts <App> into #root
 ├── App.tsx                   Providers + hash routes
 ├── index.css                 Design tokens (CSS variables) and base styles
-├── types/                    The domain model and its display labels
+├── types/                    The domain model
+├── i18n/                     Everything the interface says, in both languages
+│   ├── messages.ts             The two dictionaries; English types the keys
+│   ├── I18nProvider.tsx        Active locale, `lang`/`dir`, persistence
+│   ├── i18n-context.ts         `useI18n` / `useT`
+│   ├── labels.ts               Domain enum -> message key, checked by the compiler
+│   └── fieldError.ts           Turns a Zod message key back into text
 ├── lib/                      Pure logic — no React imports anywhere in here
 │   ├── schemas.ts              Zod: form validation + persisted/import validation
 │   ├── applications.ts         Pure transformations over one application
@@ -244,8 +271,10 @@ The suite covers the logic most likely to break silently:
 | `src/lib/metrics.test.ts` | Every dashboard figure against a fixed "today", weekly bucketing, exclusion of closed applications from upcoming interviews and open tasks, and the empty-data case. |
 | `src/lib/storage.test.ts` | Save/load round-trip, "cleared" vs "never visited", malformed JSON, schema violations, a newer format version, and the quarantine backup. |
 | `src/lib/transfer.test.ts` | Export shape, three accepted import shapes, and every rejection path — including that a rejected import never returns records, so it cannot cause data loss. |
+| `src/lib/outcomes.test.ts` | The track-record figures: what counts as a reply, that an application which reached Interview and was later rejected still counts as interviewed, that Saved-only records stay out of the denominator, that withdrawing is not a reply, and the median wait including the even-count case. |
 | `src/pages/ApplicationsPage.test.tsx` | End-to-end through the real provider: adding an application, validation blocking a bad submit, Escape discarding a draft, search and status filtering, changing status, and the delete confirmation. |
 | `src/pages/SettingsPage.test.tsx` | Clearing data without re-seeding, restoring the sample data, and the theme being remembered. |
+| `src/i18n/i18n.test.tsx` | That both dictionaries define the same keys with the same `{placeholders}` and no blank strings, that `fieldError` decodes a key with and without its argument and passes an unknown message through, and that switching language translates the interface, flips `dir` on the document and is remembered. |
 
 ## Deployment
 
@@ -287,19 +316,7 @@ Run these from the project folder.
 
 3. **Enable GitHub Pages.** In the repository, go to **Settings → Pages**, and
    under **Build and deployment → Source** choose **GitHub Actions**. Do not
-   choose "Deploy from a branch", and do not touch the `Branch` dropdown below
-   it — that row belongs to the older branch-based method and is not used here,
-   because the build output (`dist/`) is generated by CI and is not committed.
-
-   Do this **before** the first deploy runs. Until Pages is switched on, the
-   deploy workflow fails at the *Configure GitHub Pages* step with:
-
-   ```
-   Get Pages site failed. Error: Not Found
-   ```
-
-   That is the expected message for a repository whose Pages is still disabled,
-   not a problem with the project. Switch Pages on and re-run the workflow.
+   choose "Deploy from a branch".
 
 4. **Run the deployment.** The push in step 2 already triggered it. Open the
    **Actions** tab and watch **Deploy to GitHub Pages**. If you enabled Pages
@@ -405,6 +422,53 @@ chart comes from the category label on every bar plus the screen-reader table �
 no reader has to distinguish the bars by hue. This is the kind of trade-off worth
 making explicitly rather than discovering later.
 
+**English is the source of truth for translations, and the compiler enforces the
+rest.** `messages.ts` defines the English dictionary as a plain object; its keys
+become `MessageKey`, and every other locale is typed `Record<MessageKey, string>`.
+Adding a string to English and forgetting it in Arabic is a build failure rather
+than a sentence that silently comes out in the wrong language. The same trick
+covers the domain enums: `labels.ts` maps each status, work arrangement and
+interview type through an explicit `Record<Enum, MessageKey>`, so a new status
+cannot ship without a translation. A test also checks that both dictionaries use
+the same `{placeholders}`, which types cannot catch.
+
+**Validation messages travel through Zod as keys, not sentences.** The schemas in
+`lib/schemas.ts` run outside React — in tests, and on import — where there is no
+translate function to call, and Zod's `message` is a plain string. So a rule
+reports `validation.maxLength|120`, and `fieldError` turns that back into text at
+the point it is rendered. Anything that is not a known key passes through
+untouched, so Zod's own built-in messages still reach the user instead of
+vanishing. A side effect worth naming: these messages now sit under the field's
+own label and no longer repeat its name — "Required", not "Company is required".
+
+**Activity entries store a token, not a finished sentence.** An entry written
+before the language switch would otherwise stay in the old language forever,
+because it was persisted as English prose. `applyFormValues` now records
+`'details'` and the timeline decides the wording at render time. Records from
+earlier versions still carry their English text and are shown verbatim rather
+than dropped.
+
+**The charts stay left-to-right in both languages.** This one was tried the other
+way first. Recharts positions tick and value labels with `text-anchor: start|end`,
+which only means "left|right" in a left-to-right coordinate system; inside an RTL
+document the anchors flip while the space the library reserved does not, and on
+the deployed Arabic page the status chart's category labels ended up painted
+underneath the bars. Setting `orientation="right"` and `reversed` moved the
+geometry but not the anchors. `.cf-chart` is therefore pinned to `direction: ltr`
+and both charts use the geometry that has rendered correctly in English since the
+first commit; only the label text is translated. A left-to-right value axis is an
+ordinary choice in Arabic interfaces, and the card, heading, description and
+screen-reader table around the chart all still mirror.
+
+**`Intl` is told the locale explicitly.** `Intl` does not read `<html lang>`, and
+passing `undefined` follows the browser rather than the language the visitor
+picked, so an Arabic interface would still print English month names. Rather than
+thread a locale argument through every date and number helper and every component
+that calls one, `lib/locale.ts` records the active choice and the helpers read it;
+`I18nProvider` is the only writer. Arabic formats as `ar-u-nu-latn` — Arabic month
+names, Western digits, Gregorian calendar. Plain `ar-SA` would have switched the
+whole app to the Hijri calendar, which is not what a job tracker wants.
+
 **`HashRouter` over `BrowserRouter`.** Uglier URLs, but deep links and refreshes
 work on GitHub Pages with no server configuration and no 404-redirect trick. For
 a portfolio project whose whole point is being openable by a stranger, reliability
@@ -435,15 +499,26 @@ already goes there.
 - **Undo** for deletions, instead of a confirmation dialog.
 - **End-to-end tests** with Playwright, covering the flows the component tests
   approximate.
-- **Internationalisation** — the interface is English-only today.
+- **Translating the import diagnostics.** The messages in `lib/transfer.ts` that
+  explain why a JSON file was rejected are still English only — they describe
+  file-format problems and some come straight from Zod, so they need more than a
+  lookup table.
+- **More languages.** The structure takes a third without changes: add a
+  dictionary and a `LOCALES` entry, and the compiler lists every string still
+  missing.
 
 ## Screenshots
 
-None are included. They would have to be genuine captures of the running app,
-and the environment this project was assembled in had no browser available. To
-add your own: run `npm run dev`, capture the dashboard, the applications table,
-the Kanban board and an application's detail page in both themes, save them under
-`docs/screenshots/`, and link them here.
+None are committed to the repository. The
+[live demo](https://anoos2020anoos-png.github.io/careerflow/) is the visual
+reference in the meantime — it runs the same build, seeded with the sample data,
+and needs nothing installed.
+
+To add captures here: run `npm run dev`, then capture the dashboard, the
+applications table, the Kanban board and an application's detail page. Worth
+doing in both themes and both languages, since the right-to-left layout is one
+of the things worth showing. Save them under `docs/screenshots/` and link them
+from this section.
 
 ## Licence
 
