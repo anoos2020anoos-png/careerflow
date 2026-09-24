@@ -30,27 +30,27 @@ if errorlevel 1 (
 
 echo === npm install ===>> "%LOG%"
 call npm install >> "%LOG%" 2>&1
-echo INSTALL_EXIT=%ERRORLEVEL%>> "%LOG%"
+>> "%LOG%" echo INSTALL_EXIT=%ERRORLEVEL%
 echo.>> "%LOG%"
 
 echo === npm run lint ===>> "%LOG%"
 call npm run lint >> "%LOG%" 2>&1
-echo LINT_EXIT=%ERRORLEVEL%>> "%LOG%"
+>> "%LOG%" echo LINT_EXIT=%ERRORLEVEL%
 echo.>> "%LOG%"
 
 echo === npm run typecheck ===>> "%LOG%"
 call npm run typecheck >> "%LOG%" 2>&1
-echo TYPECHECK_EXIT=%ERRORLEVEL%>> "%LOG%"
+>> "%LOG%" echo TYPECHECK_EXIT=%ERRORLEVEL%
 echo.>> "%LOG%"
 
 echo === npm test ===>> "%LOG%"
 call npm test >> "%LOG%" 2>&1
-echo TEST_EXIT=%ERRORLEVEL%>> "%LOG%"
+>> "%LOG%" echo TEST_EXIT=%ERRORLEVEL%
 echo.>> "%LOG%"
 
 echo === npm run build ===>> "%LOG%"
 call npm run build >> "%LOG%" 2>&1
-echo BUILD_EXIT=%ERRORLEVEL%>> "%LOG%"
+>> "%LOG%" echo BUILD_EXIT=%ERRORLEVEL%
 echo.>> "%LOG%"
 
 echo ALL_DONE>> "%LOG%"
