@@ -4,8 +4,11 @@ CareerFlow is a browser-based tracker for a job search: every application in one
 place, a board that shows where each one stands, interviews and follow-ups that
 do not get forgotten, and a dashboard that answers "how is this actually going?"
 
-It runs entirely in the browser. There is no account, no backend and no API key —
-open it and start using it.
+It runs entirely in the browser: open it and start using it, with no account and
+no API key. **Optionally**, it can sign in to a
+[CareerFlow API](https://github.com/anoos2020anoos-png/careerflow-api) server
+from Settings and keep your data in an account instead (see
+[Optional account](#optional-account)).
 
 - **Live demo:** <https://anoos2020anoos-png.github.io/careerflow/>
 - **Repository:** <https://github.com/anoos2020anoos-png/careerflow>
@@ -142,6 +145,9 @@ updates the moment anything changes.
 - JSON export, and import that validates the file before replacing anything.
 - Reset to the sample data, or clear every record.
 - Clear, in-app explanation of what browser-only storage means.
+- An optional account: sign in to a CareerFlow API server from Settings to keep
+  the same data there instead, with changes shown at once and saved in the
+  background, and this browser's own data left untouched.
 - About 15 fictional sample applications seeded on the first visit, with a spread
   of statuses and dates so the dashboard is meaningful immediately.
 
@@ -346,6 +352,17 @@ The suite covers the logic most likely to break silently:
 | `src/pages/SalaryExpectation.test.tsx` | Saving and reloading an expected salary, the meets / below markers in the list, no marker for a salary in another currency, and the salary filter. |
 | `src/pages/SettingsPage.test.tsx` | Clearing data without re-seeding, restoring the sample data, and the theme being remembered. |
 | `src/i18n/i18n.test.tsx` | That both dictionaries define the same keys with the same `{placeholders}` and no blank strings, that `fieldError` decodes a key with and without its argument and passes an unknown message through, and that switching language translates the interface, flips `dir` on the document and is remembered. |
+| `src/lib/sync.test.ts` | The requests worked out for every kind of change (new, edited, deleted; interviews, tasks, requirements; profile and qualifications; companies; a full replace), `null` for cleared fields, ids passed through, and the queue: one request at a time, in order, only the latest answer per record applied, and a failure dropping what was waiting. |
+| `src/lib/api.test.ts` | The API client: token and JSON handling, the error format read into codes and details, and an unreachable server, a timeout and a non-JSON answer told apart. |
+| `src/pages/Account.test.tsx` | Through the real provider and a stand-in server: signing in shows the account's data and leaves this browser's alone; a change is sent and the server's version shown; a refused change is reloaded away; an ended session returns to this browser's data; the copy offer; a wrong password and a too-short new one explained; signing out. |
+
+Beyond the suite, the account flow was run by hand in a real browser (Chromium,
+through Playwright) against the real API: creating an account from Settings,
+copying the sample data into it, reloading and staying signed in, a
+qualification and a headline reaching the server, the server being stopped and
+the app saying so, *Try again* after it restarted, the Arabic layout, and signing
+out back to the browser's own data, with no errors in the browser console. That
+script is not part of `npm test`.
 
 ## Deployment
 
@@ -414,10 +431,47 @@ Any static host works. Build with the right base path and upload `dist/`:
 VITE_BASE=/ npm run build   # for a host serving from the domain root
 ```
 
+## Optional account
+
+Signed out (the default, and what the live demo does), everything stays in this
+browser as described below. Signed in to a
+[CareerFlow API](https://github.com/anoos2020anoos-png/careerflow-api) server
+from **Settings → Account**, the same data belongs to your account instead, and
+is there in any browser where you sign in.
+
+To try it on your own computer:
+
+1. Start the API: in the `careerflow-api` repository, `npm install` then
+   `npm start`. It listens on `http://localhost:3000` and needs no database
+   installed.
+2. Start the app: here, `npm run dev`, and open `http://localhost:5173`.
+3. In **Settings → Account**, leave the server address as
+   `http://localhost:3000`, enter an email and a password of at least 15
+   characters, and choose **Create account**. If this browser already holds
+   applications, CareerFlow offers to copy them into the new account.
+
+How it works:
+
+- **Nothing about the screens changed.** Every change is applied on screen at
+  once by the same functions as before. `lib/sync.ts` then compares the data
+  before and after the change and works out the API requests that make the
+  server agree (a `PATCH` of the fields, a `POST` of a new task, and so on).
+- **Requests go one at a time, in order,** and each answer replaces the local
+  copy of what it describes, so the server's version wins. New records are sent
+  with the id the app already gave them, so they can be changed again before the
+  server has answered, and the link to them stays valid.
+- **If the server refuses a change, the account's data is reloaded,** so the
+  screen never keeps showing something that was not saved. If the server cannot
+  be reached, the app says so; *Try again* reloads what the server has.
+- **This browser's own data is never touched while signed in.** Local storage
+  is not written, and signing out brings it back exactly as it was.
+- The session token is kept in `localStorage` (`careerflow:session`) and sent
+  in the `Authorization` header, never as a cookie.
+
 ## Browser storage — what it means for you
 
-CareerFlow has no server. Everything you enter lives in **this browser, on this
-device**, in `localStorage`.
+Signed out, CareerFlow has no server. Everything you enter lives in **this
+browser, on this device**, in `localStorage`.
 
 - Your data is **not synced** between devices, browsers or profiles.
 - Clearing site data, "clear browsing history" with site data selected, or
@@ -620,8 +674,11 @@ form. Anything else renders as inert text.
 Not implemented. Listed to show where the project would go next, not to imply it
 already goes there.
 
-- **Optional cloud sync**, behind an account, with the local-only mode kept as
-  the default.
+- **Changes made while the server is unreachable are not kept.** Signed in, a
+  change the server never received is shown as not saved and replaced by the
+  server's data on *Try again*. Queuing it and sending it later is the next step.
+- **A hosted API.** The account feature works against a server you run; none is
+  deployed, so the live demo stays local-only.
 - **Drag and drop on the Kanban board**, as an enhancement layered over the
   existing select control.
 - **CSV import**, to bring in an existing spreadsheet.
@@ -633,8 +690,9 @@ already goes there.
   Reply rate and time to first reply exist already; what is missing is the source.
 - **Calendar export** (`.ics`) for interviews.
 - **Undo** for deletions, instead of a confirmation dialog.
-- **End-to-end tests** with Playwright, covering the flows the component tests
-  approximate.
+- **End-to-end tests in CI.** The account flow was checked in a real browser
+  against a running API (see [Testing](#testing)), but that check is a script
+  run by hand, not part of the automated suite.
 - **Translating the import diagnostics.** The messages in `lib/transfer.ts` that
   explain why a JSON file was rejected are still English only — they describe
   file-format problems and some come straight from Zod, so they need more than a

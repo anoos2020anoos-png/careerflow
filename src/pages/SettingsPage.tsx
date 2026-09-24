@@ -28,6 +28,8 @@ import { STORAGE_KEY } from '@/lib/storage';
 
 import type { Application, CompanyDetails, Profile } from '@/types';
 import { cn } from '@/lib/cn';
+import { AccountCard } from '@/features/account/AccountCard';
+import { isolate } from '@/features/account/accountMessages';
 
 /** What a validated file carries: the records, and a profile if it had one. */
 interface PendingImport {
@@ -80,7 +82,8 @@ function ChoiceButton({
 }
 
 export function SettingsPage() {
-  const { applications, profile, companies, replaceAll, clearAll, resetToDemo } = useAppData();
+  const { applications, profile, companies, replaceAll, clearAll, resetToDemo, account } =
+    useAppData();
   const { mode, setMode } = useTheme();
   const { locale, setLocale, t } = useI18n();
 
@@ -137,6 +140,8 @@ export function SettingsPage() {
       <PageHeader title={t('settings.title')} description={t('settings.description')} />
 
       <div className="flex max-w-3xl flex-col gap-5">
+        <AccountCard />
+
         <Card>
           <CardHeader title={t('settings.language')} description={t('settings.languageDesc')} />
           <CardBody>
@@ -183,15 +188,28 @@ export function SettingsPage() {
         </Card>
 
         <Card>
-          <CardHeader title={t('settings.storage')} description={t('settings.storageDesc')} />
+          <CardHeader
+            title={t('settings.storage')}
+            description={
+              account.signedIn ? t('settings.storageAccountDesc') : t('settings.storageDesc')
+            }
+          />
           <CardBody className="flex flex-col gap-3 text-sm text-ink-muted">
-            <p>
-              {t('settings.storageBody1', {
-                key: STORAGE_KEY,
-                version: DATA_VERSION,
-              })}
-            </p>
-            <p>{t('settings.storageBody2')}</p>
+            {account.signedIn ? (
+              <p>
+                {t('settings.storageAccountBody', { server: isolate(account.serverUrl ?? '') })}
+              </p>
+            ) : (
+              <>
+                <p>
+                  {t('settings.storageBody1', {
+                    key: STORAGE_KEY,
+                    version: DATA_VERSION,
+                  })}
+                </p>
+                <p>{t('settings.storageBody2')}</p>
+              </>
+            )}
             <p className="font-medium text-ink">
               {plural(
                 t,

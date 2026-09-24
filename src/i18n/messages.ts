@@ -89,7 +89,7 @@ const en = {
   /* Dashboard */
   'dashboard.title': 'Dashboard',
   'dashboard.description':
-    'A summary of your job search, calculated from the applications saved in this browser.',
+    'A summary of your job search, calculated from your saved applications.',
   'dashboard.descriptionEmpty':
     'A summary of your job search, calculated from the applications you have saved.',
   'dashboard.total': 'Total applications',
@@ -246,7 +246,7 @@ const en = {
   'detail.back': 'All applications',
   'detail.notFound': 'Application not found',
   'detail.notFoundDesc':
-    'It may have been deleted, or the link points at a record that is not in this browser.',
+    'It may have been deleted, or the link points at a record that is not saved here.',
   'detail.backButton': 'Back to applications',
   'detail.roleDetails': 'Role details',
   'detail.salary': 'Salary range',
@@ -312,7 +312,7 @@ const en = {
   /* Settings */
   'settings.title': 'Settings',
   'settings.description':
-    'Appearance, and everything to do with the data CareerFlow keeps in this browser.',
+    'Your account, the look of the app, and everything to do with the data CareerFlow keeps.',
   'settings.theme': 'Theme',
   'settings.themeDesc': 'Remembered in this browser.',
   'settings.themeGroup': 'Colour theme',
@@ -326,7 +326,7 @@ const en = {
     'Remembered in this browser. Arabic switches the whole layout to right-to-left.',
   'settings.languageGroup': 'Interface language',
   'settings.storage': 'Where your data lives',
-  'settings.storageDesc': 'CareerFlow has no account, no server and no sync.',
+  'settings.storageDesc': 'Signed out, everything stays in this browser: no server, no sync.',
   'settings.storageBody1':
     'Everything you enter is stored in this browser’s local storage under the key {key} (data format version {version}). Nothing is uploaded anywhere.',
   'settings.storageBody2':
@@ -347,7 +347,7 @@ const en = {
   'settings.importSuccessOne': 'Imported 1 application. Your previous data has been replaced.',
   'settings.importConfirmTitle': 'Replace your data with this file?',
   'settings.importConfirmDesc':
-    'The file contains {incoming} applications. Importing replaces the {current} currently stored in this browser.',
+    'The file contains {incoming} applications. Importing replaces the {current} you have now.',
   'settings.importConfirm': 'Replace data',
   'settings.reset': 'Reset',
   'settings.resetDesc': 'Both actions are immediate and cannot be undone.',
@@ -365,9 +365,9 @@ const en = {
   'settings.clearButton': 'Clear all data',
   'settings.clearConfirmTitle': 'Clear all records?',
   'settings.clearConfirmDesc':
-    'All {count} applications, with their interviews, follow-ups and timelines, will be removed from this browser.',
+    'All {count} applications, with their interviews, follow-ups and timelines, will be removed.',
   'settings.clearConfirmDescOne':
-    'The single application stored here, with its interviews, follow-ups and timeline, will be removed from this browser.',
+    'The single application saved here, with its interviews, follow-ups and timeline, will be removed.',
   'settings.clearConfirm': 'Clear everything',
 
   /* Companies */
@@ -513,7 +513,7 @@ const en = {
 
   'profile.title': 'Your background',
   'profile.description':
-    'What you can point to when a posting asks for something. Kept in this browser like everything else, and used for one thing: pre-ticking a requirement when it plainly matches something here.',
+    'What you can point to when a posting asks for something. Kept with the rest of your data, and used for one thing: pre-ticking a requirement when it plainly matches something here.',
   'profile.headline': 'One-line summary',
   'profile.headlineHint': 'Optional. How you would describe yourself to a recruiter.',
   'profile.headlinePlaceholder': 'English literature graduate, two years in customer support',
@@ -530,6 +530,8 @@ const en = {
   'profile.oneEntry': '1 entry',
   'profile.privacy':
     'This stays in your browser. It is never uploaded, and it is included in your JSON export only if you have added something to it.',
+  'profile.privacyAccount':
+    'This is saved to your account with the rest of your data, and included in your JSON export only if you have added something to it.',
 
   'filters.onlyMeetingEssentials': 'Only where I meet every essential',
   'filters.onlyMeetingEssentialsHint':
@@ -558,6 +560,62 @@ const en = {
   'storage.blocked':
     'This browser is blocking local storage, so changes will be lost when you close the tab. Private browsing or a site-data setting is the usual cause.',
   'storage.dismiss': 'Dismiss notice',
+  /* Account and sync (optional: the app works without one) */
+  'account.title': 'Account',
+  'account.localDesc':
+    'Your data is kept in this browser. Sign in to a CareerFlow server to keep it in an account instead, and reach it from any browser.',
+  'account.server': 'Server address',
+  'account.serverHint': 'Where the CareerFlow API runs, for example http://localhost:3000.',
+  'account.email': 'Email',
+  'account.password': 'Password',
+  'account.passwordHint':
+    'A new account needs at least 15 characters. A few ordinary words together work well.',
+  'account.signIn': 'Sign in',
+  'account.createAccount': 'Create account',
+  'account.working': 'Connecting…',
+  'account.signedInAs': 'Signed in as {email}',
+  'account.signedInDesc':
+    'Your data is saved to your account on {server}. This browser’s own data is kept separately and comes back when you sign out.',
+  'account.signOut': 'Sign out',
+  'account.signOutEverywhere': 'Sign out on all devices',
+  'account.statusSaving': 'Saving…',
+  'account.statusSaved': 'All changes saved',
+  'account.statusLoading': 'Loading your data…',
+  'account.copyTitle': 'Your account is empty',
+  'account.copyDesc': 'Copy the {count} applications in this browser into it?',
+  'account.copyDescOne': 'Copy the 1 application in this browser into it?',
+  'account.copy': 'Copy to my account',
+  'account.copyDismiss': 'Start empty',
+  'account.errorFields': 'Enter your email address and password.',
+  'account.errorUrl': 'Enter the server address, starting with http:// or https://.',
+  'account.errorCredentials': 'The email address or password is incorrect.',
+  'account.errorTaken': 'An account with that email address already exists. Sign in instead.',
+  'account.errorRateLimited': 'Too many attempts. Wait a minute and try again.',
+  'account.errorUnreachable':
+    'The server could not be reached. Check the address, and that the server is running.',
+  'account.errorTimeout': 'The server took too long to answer. Try again.',
+  'account.errorPasswordShort': 'Use at least 15 characters.',
+  'account.errorPasswordRepeated': 'Do not repeat a single character.',
+  'account.errorPasswordEmail': 'Do not use your email address in your password.',
+  'account.errorPasswordApp': 'Do not use the name of this app in your password.',
+  'account.errorOther': 'The server refused: {message}',
+  'sync.saveFailed':
+    'A change could not be saved, so your data was reloaded from the server as it stands.',
+  'sync.unreachable':
+    'The server could not be reached. Changes made since then may not have been saved.',
+  'sync.sessionEnded':
+    'Your session ended, so CareerFlow is showing this browser’s own data again. Sign in from Settings to return to your account.',
+  'sync.retry': 'Try again',
+  'sync.dismiss': 'Dismiss',
+  'sync.loading': 'Loading your data from {server}…',
+  'sync.unavailableTitle': 'Your account could not be loaded',
+  'sync.unavailableDesc':
+    'The server at {server} did not answer. Nothing has been lost: try again once it is running.',
+  'sync.useDevice': 'Use this browser’s data instead',
+  'shell.accountNote': 'Saved to your account: {email}',
+  'settings.storageAccountDesc': 'An account on a CareerFlow server.',
+  'settings.storageAccountBody':
+    'Everything you enter is saved to your account on {server}, so it is there in any browser where you sign in. This browser’s own data is kept separately and comes back when you sign out.',
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -628,7 +686,7 @@ const ar: Record<MessageKey, string> = {
 
   /* Dashboard */
   'dashboard.title': 'لوحة التحكم',
-  'dashboard.description': 'ملخص بحثك عن وظيفة، محسوب من الطلبات المحفوظة في هذا المتصفح.',
+  'dashboard.description': 'ملخص بحثك عن وظيفة، محسوب من طلباتك المحفوظة.',
   'dashboard.descriptionEmpty': 'ملخص بحثك عن وظيفة، محسوب من الطلبات التي حفظتها.',
   'dashboard.total': 'إجمالي الطلبات',
   'dashboard.totalDef': 'كل سجل محفوظ، أيًا كانت حالته.',
@@ -777,7 +835,7 @@ const ar: Record<MessageKey, string> = {
   /* Detail */
   'detail.back': 'كل الطلبات',
   'detail.notFound': 'الطلب غير موجود',
-  'detail.notFoundDesc': 'قد يكون حُذف، أو أن الرابط يشير إلى سجل غير موجود في هذا المتصفح.',
+  'detail.notFoundDesc': 'قد يكون حُذف، أو أن الرابط يشير إلى سجل غير محفوظ هنا.',
   'detail.backButton': 'العودة إلى الطلبات',
   'detail.roleDetails': 'تفاصيل الدور',
   'detail.salary': 'نطاق الراتب',
@@ -839,8 +897,7 @@ const ar: Record<MessageKey, string> = {
 
   /* Settings */
   'settings.title': 'الإعدادات',
-  'settings.description':
-    'المظهر، وكل ما يتعلق بالبيانات التي يحفظها CareerFlow في هذا المتصفح.',
+  'settings.description': 'حسابك، ومظهر التطبيق، وكل ما يتعلق بالبيانات التي يحفظها CareerFlow.',
   'settings.theme': 'المظهر',
   'settings.themeDesc': 'يُحفظ في هذا المتصفح.',
   'settings.themeGroup': 'مظهر الألوان',
@@ -853,7 +910,7 @@ const ar: Record<MessageKey, string> = {
     'تُحفظ في هذا المتصفح. اختيار العربية يقلب التخطيط كاملًا إلى اليمين.',
   'settings.languageGroup': 'لغة الواجهة',
   'settings.storage': 'أين تُحفظ بياناتك',
-  'settings.storageDesc': 'CareerFlow بلا حساب ولا خادم ولا مزامنة.',
+  'settings.storageDesc': 'من دون تسجيل الدخول يبقى كل شيء في هذا المتصفح: لا خادم ولا مزامنة.',
   'settings.storageBody1':
     'كل ما تُدخله يُحفظ في التخزين المحلي لهذا المتصفح تحت المفتاح {key} (إصدار صيغة البيانات {version}). لا يُرفع شيء إلى أي مكان.',
   'settings.storageBody2':
@@ -874,7 +931,7 @@ const ar: Record<MessageKey, string> = {
   'settings.importSuccessOne': 'استُورد طلب واحد. استُبدلت بياناتك السابقة.',
   'settings.importConfirmTitle': 'استبدال بياناتك بهذا الملف؟',
   'settings.importConfirmDesc':
-    'الملف يحتوي على {incoming} طلبًا. الاستيراد يستبدل الـ {current} المحفوظة حاليًا في هذا المتصفح.',
+    'الملف يحتوي على {incoming} طلبًا. الاستيراد يستبدل الـ {current} الموجودة لديك الآن.',
   'settings.importConfirm': 'استبدال البيانات',
   'settings.reset': 'إعادة التعيين',
   'settings.resetDesc': 'كلا الإجراءين فوري ولا يمكن التراجع عنه.',
@@ -891,9 +948,9 @@ const ar: Record<MessageKey, string> = {
   'settings.clearButton': 'مسح كل البيانات',
   'settings.clearConfirmTitle': 'مسح كل السجلات؟',
   'settings.clearConfirmDesc':
-    'ستُزال كل الطلبات الـ {count}، مع مقابلاتها ومتابعاتها وسجلاتها الزمنية، من هذا المتصفح.',
+    'ستُزال كل الطلبات الـ {count}، مع مقابلاتها ومتابعاتها وسجلاتها الزمنية.',
   'settings.clearConfirmDescOne':
-    'سيُحذف الطلب الوحيد المحفوظ هنا، مع مقابلاته ومهامه وسجله، من هذا المتصفح.',
+    'سيُحذف الطلب الوحيد المحفوظ هنا، مع مقابلاته ومهامه وسجله.',
   'settings.clearConfirm': 'مسح كل شيء',
 
   /* Companies */
@@ -1033,7 +1090,7 @@ const ar: Record<MessageKey, string> = {
 
   'profile.title': 'خلفيتك',
   'profile.description':
-    'ما تستطيع الإشارة إليه حين يطلب إعلان شيئًا. محفوظ في هذا المتصفح مثل كل شيء آخر، ويُستخدم لغرض واحد: التأشير المسبق على متطلب يطابق شيئًا هنا بوضوح.',
+    'ما تستطيع الإشارة إليه حين يطلب إعلان شيئًا. محفوظ مع بقية بياناتك، ويُستخدم لغرض واحد: التأشير المسبق على متطلب يطابق شيئًا هنا بوضوح.',
   'profile.headline': 'وصف بسطر واحد',
   'profile.headlineHint': 'اختياري. كيف تصف نفسك لمسؤول التوظيف.',
   'profile.headlinePlaceholder': 'خريج أدب إنجليزي، سنتان في خدمة العملاء',
@@ -1050,6 +1107,8 @@ const ar: Record<MessageKey, string> = {
   'profile.oneEntry': 'مُدخل واحد',
   'profile.privacy':
     'يبقى هذا في متصفحك. لا يُرفع أبدًا، ولا يُدرج في ملف التصدير إلا إذا أضفت إليه شيئًا.',
+  'profile.privacyAccount':
+    'يُحفظ هذا في حسابك مع بقية بياناتك، ولا يُدرج في ملف التصدير إلا إذا أضفت إليه شيئًا.',
 
   'filters.onlyMeetingEssentials': 'فقط ما أحقق كل أساسياته',
   'filters.onlyMeetingEssentialsHint':
@@ -1077,6 +1136,59 @@ const ar: Record<MessageKey, string> = {
   'storage.blocked':
     'هذا المتصفح يمنع التخزين المحلي، لذا ستُفقد التغييرات عند إغلاق التبويب. السبب المعتاد هو التصفح المتخفي أو إعداد لبيانات المواقع.',
   'storage.dismiss': 'إخفاء التنبيه',
+  /* الحساب والمزامنة (اختياري: التطبيق يعمل بدونه) */
+  'account.title': 'الحساب',
+  'account.localDesc':
+    'بياناتك محفوظة في هذا المتصفح. سجّل الدخول إلى خادم CareerFlow لتحفظها في حساب بدلًا من ذلك، وتصل إليها من أي متصفح.',
+  'account.server': 'عنوان الخادم',
+  'account.serverHint': 'حيث تعمل واجهة CareerFlow البرمجية، مثل http://localhost:3000.',
+  'account.email': 'البريد الإلكتروني',
+  'account.password': 'كلمة المرور',
+  'account.passwordHint':
+    'الحساب الجديد يحتاج 15 حرفًا على الأقل. بضع كلمات عادية متتالية تفي بالغرض.',
+  'account.signIn': 'تسجيل الدخول',
+  'account.createAccount': 'إنشاء حساب',
+  'account.working': 'جارٍ الاتصال…',
+  'account.signedInAs': 'مسجّل الدخول باسم {email}',
+  'account.signedInDesc':
+    'تُحفظ بياناتك في حسابك على {server}. بيانات هذا المتصفح نفسه محفوظة على حدة، وتعود عند تسجيل الخروج.',
+  'account.signOut': 'تسجيل الخروج',
+  'account.signOutEverywhere': 'تسجيل الخروج من كل الأجهزة',
+  'account.statusSaving': 'جارٍ الحفظ…',
+  'account.statusSaved': 'حُفظت كل التغييرات',
+  'account.statusLoading': 'جارٍ تحميل بياناتك…',
+  'account.copyTitle': 'حسابك فارغ',
+  'account.copyDesc': 'هل تنسخ إليه الطلبات الـ {count} الموجودة في هذا المتصفح؟',
+  'account.copyDescOne': 'هل تنسخ إليه الطلب الوحيد الموجود في هذا المتصفح؟',
+  'account.copy': 'انسخها إلى حسابي',
+  'account.copyDismiss': 'ابدأ فارغًا',
+  'account.errorFields': 'أدخل بريدك الإلكتروني وكلمة المرور.',
+  'account.errorUrl': 'أدخل عنوان الخادم، مبتدئًا بـ http:// أو https://.',
+  'account.errorCredentials': 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+  'account.errorTaken': 'يوجد حساب بهذا البريد الإلكتروني. سجّل الدخول بدلًا من ذلك.',
+  'account.errorRateLimited': 'محاولات كثيرة. انتظر دقيقة ثم حاول مرة أخرى.',
+  'account.errorUnreachable': 'تعذّر الوصول إلى الخادم. تحقّق من العنوان، ومن أن الخادم يعمل.',
+  'account.errorTimeout': 'تأخّر الخادم في الرد. حاول مرة أخرى.',
+  'account.errorPasswordShort': 'استخدم 15 حرفًا على الأقل.',
+  'account.errorPasswordRepeated': 'لا تكرّر حرفًا واحدًا.',
+  'account.errorPasswordEmail': 'لا تستخدم بريدك الإلكتروني في كلمة المرور.',
+  'account.errorPasswordApp': 'لا تستخدم اسم هذا التطبيق في كلمة المرور.',
+  'account.errorOther': 'رفض الخادم الطلب: {message}',
+  'sync.saveFailed': 'تعذّر حفظ أحد التغييرات، فأُعيد تحميل بياناتك كما هي على الخادم.',
+  'sync.unreachable':
+    'تعذّر الوصول إلى الخادم. قد لا تكون التغييرات التي أجريتها منذ ذلك الحين قد حُفظت.',
+  'sync.sessionEnded':
+    'انتهت جلستك، لذا يعرض CareerFlow بيانات هذا المتصفح نفسه من جديد. سجّل الدخول من الإعدادات للعودة إلى حسابك.',
+  'sync.retry': 'حاول مرة أخرى',
+  'sync.dismiss': 'إخفاء',
+  'sync.loading': 'جارٍ تحميل بياناتك من {server}…',
+  'sync.unavailableTitle': 'تعذّر تحميل حسابك',
+  'sync.unavailableDesc': 'لم يستجب الخادم على {server}. لم يُفقد شيء: حاول مرة أخرى حين يعمل.',
+  'sync.useDevice': 'استخدم بيانات هذا المتصفح بدلًا من ذلك',
+  'shell.accountNote': 'محفوظة في حسابك: {email}',
+  'settings.storageAccountDesc': 'حساب على خادم CareerFlow.',
+  'settings.storageAccountBody':
+    'كل ما تُدخله يُحفظ في حسابك على {server}، فتجده في أي متصفح تسجّل الدخول منه. بيانات هذا المتصفح نفسه محفوظة على حدة، وتعود عند تسجيل الخروج.',
 };
 
 export const MESSAGES: Record<Locale, Record<MessageKey, string>> = { en, ar };

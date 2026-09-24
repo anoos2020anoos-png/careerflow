@@ -21,11 +21,18 @@ import { QUALIFICATION_KINDS } from '@/types';
  *
  * It does one job: when a requirement is added to an application and its wording
  * plainly matches something here, the box starts ticked. Nothing on this page is
- * scored, ranked or sent anywhere.
+ * scored or ranked, and it goes nowhere except, when the user has signed in, to
+ * their own account.
  */
 export function ProfilePage() {
-  const { profile, setHeadline, addQualification, removeQualification, setSalaryExpectation } =
-    useAppData();
+  const {
+    profile,
+    setHeadline,
+    addQualification,
+    removeQualification,
+    setSalaryExpectation,
+    account,
+  } = useAppData();
   const t = useT();
 
   const [headlineDraft, setHeadlineDraft] = useState(profile.headline ?? '');
@@ -181,7 +188,9 @@ export function ProfilePage() {
 
             <p className="mt-3 flex items-start gap-2 text-xs leading-relaxed text-ink-muted">
               <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              <span>{t('profile.privacy')}</span>
+              <span>
+                {t(account.signedIn ? 'profile.privacyAccount' : 'profile.privacy')}
+              </span>
             </p>
           </CardBody>
         </Card>

@@ -5,6 +5,10 @@ import { Logo } from '@/components/layout/Logo';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { LocaleToggle } from '@/components/layout/LocaleToggle';
 import { StorageNotice } from '@/components/layout/StorageNotice';
+import { AccountGate, SyncNotice } from '@/features/account/SyncNotice';
+import { SyncStatus } from '@/features/account/SyncStatus';
+import { isolate } from '@/features/account/accountMessages';
+import { useAppData } from '@/state/app-data-context';
 import { useT } from '@/i18n/i18n-context';
 import type { MessageKey } from '@/i18n/messages';
 import { cn } from '@/lib/cn';
@@ -26,6 +30,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export function AppShell() {
   const t = useT();
+  const { account } = useAppData();
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -67,7 +72,9 @@ export function AppShell() {
           </ul>
         </nav>
         <p className="border-t border-line px-5 py-4 text-xs leading-relaxed text-ink-muted">
-          {t('shell.storageNote')}
+          {account.signedIn
+            ? t('shell.accountNote', { email: isolate(account.email ?? '') })
+            : t('shell.storageNote')}
         </p>
       </aside>
 
@@ -82,6 +89,7 @@ export function AppShell() {
 
       {/* Desktop top bar */}
       <div className="hidden h-16 items-center justify-end gap-3 border-b border-line bg-surface px-6 lg:flex lg:ps-[16rem]">
+        <SyncStatus className="me-auto" />
         <LocaleToggle />
         <ThemeToggle />
       </div>
@@ -92,7 +100,10 @@ export function AppShell() {
         className="px-4 pb-24 pt-5 focus:outline-none sm:px-6 lg:ms-60 lg:px-8 lg:pb-12 lg:pt-6"
       >
         <StorageNotice />
-        <Outlet />
+        <SyncNotice />
+        <AccountGate>
+          <Outlet />
+        </AccountGate>
       </main>
 
       {/* Mobile bottom navigation */}

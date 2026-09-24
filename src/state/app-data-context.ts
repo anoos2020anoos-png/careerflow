@@ -15,6 +15,48 @@ import type {
   TaskFormValues,
 } from '@/lib/schemas';
 
+/** Why the account's data could not be loaded or saved. */
+export interface SyncProblem {
+  kind:
+    /** The server refused a change; the account's data was reloaded. */
+    | 'save_failed'
+    /** The server could not be reached, or refused to load the data. */
+    | 'unreachable'
+    /** The session expired or was ended elsewhere; back to this browser's data. */
+    | 'session_ended';
+  /** The API's error code (`network_error`, `validation_failed`, …). */
+  code: string;
+  /** The server's own wording, in English; shown when the code is not known. */
+  message: string;
+}
+
+export interface AccountState {
+  signedIn: boolean;
+  email?: string;
+  serverUrl?: string;
+  /**
+   * `local`: signed out, data in this browser. Signed in: `loading` the
+   * account's data, `ready`, or `unavailable` when it could not be loaded.
+   */
+  phase: 'local' | 'loading' | 'ready' | 'unavailable';
+  /** Changes are on their way to the server. */
+  saving: boolean;
+  problem: SyncProblem | null;
+  /**
+   * After signing in to an empty account: how many applications this browser
+   * holds that could be copied into it. `null` when there is nothing to offer.
+   */
+  copyOffer: number | null;
+}
+
+export interface SignInInput {
+  serverUrl: string;
+  email: string;
+  password: string;
+  /** Create the account rather than sign in to an existing one. */
+  createAccount: boolean;
+}
+
 export interface AppDataValue {
   applications: Application[];
   /** `false` when the browser refuses `localStorage` (private mode, blocked). */
@@ -64,6 +106,21 @@ export interface AppDataValue {
   ) => void;
   clearAll: () => void;
   resetToDemo: () => void;
+
+  /** Where the data is kept: this browser, or an account on a server. */
+  account: AccountState;
+  /** Rejects with an `ApiError` the sign-in form can explain. */
+  signIn: (input: SignInInput) => Promise<void>;
+  /** Waits briefly for unsaved changes, then returns to this browser's data. */
+  signOut: (everywhere?: boolean) => Promise<void>;
+  /** Reloads the account's data after a problem. */
+  retrySync: () => void;
+  dismissSyncProblem: () => void;
+  /** Copies what this browser held into the (empty) account just signed in to. */
+  copyDeviceDataToAccount: () => void;
+  dismissCopyOffer: () => void;
+  /** Leaves the account without contacting the server, e.g. when it is unreachable. */
+  switchToDeviceData: () => void;
 }
 
 export const AppDataContext = createContext<AppDataValue | null>(null);
