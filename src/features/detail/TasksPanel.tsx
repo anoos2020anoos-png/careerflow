@@ -116,28 +116,33 @@ export function TasksPanel({
         <form
           noValidate
           onSubmit={handleSubmit(submit)}
-          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+          className="flex flex-col gap-3"
         >
-          <Field
-            label={t('tasks.newLabel')}
-            error={fieldError(t, errors.title?.message)}
-            className="flex-1"
-          >
+          {/*
+            The text gets its own full-width line at every size. A viewport
+            breakpoint cannot tell how wide this card is — on the detail page it
+            sits in a narrow column — and a single row once squeezed this input
+            down to 36px at a 1024px window. The date and the button share the
+            next line, and wrap onto two when the column is too narrow for both.
+          */}
+          <Field label={t('tasks.newLabel')} error={fieldError(t, errors.title?.message)}>
             {(aria) => (
               <Input {...aria} {...register('title')} placeholder={t('tasks.newPlaceholder')} />
             )}
           </Field>
-          <Field
-            label={t('tasks.dueDate')}
-            error={fieldError(t, errors.dueDate?.message)}
-            className="sm:w-44"
-          >
-            {(aria) => <Input {...aria} {...register('dueDate')} type="date" dir="ltr" />}
-          </Field>
-          <Button type="submit" variant="primary" className="sm:mb-0">
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            {t('action.add')}
-          </Button>
+          <div className="flex flex-wrap items-end gap-3">
+            <Field
+              label={t('tasks.dueDate')}
+              error={fieldError(t, errors.dueDate?.message)}
+              className="min-w-[9rem] flex-1"
+            >
+              {(aria) => <Input {...aria} {...register('dueDate')} type="date" dir="ltr" />}
+            </Field>
+            <Button type="submit" variant="primary" className="shrink-0">
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              {t('action.add')}
+            </Button>
+          </div>
         </form>
       </CardBody>
     </Card>

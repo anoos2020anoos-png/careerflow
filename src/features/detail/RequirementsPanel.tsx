@@ -155,36 +155,35 @@ export function RequirementsPanel({
         <form
           noValidate
           onSubmit={handleSubmit(submit)}
-          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+          className="flex flex-col gap-3"
         >
-          <Field
-            label={t('match.newLabel')}
-            error={fieldError(t, errors.label?.message)}
-            className="flex-1"
-          >
+          {/* Same layout as the follow-up form, for the same reason: see TasksPanel. */}
+          <Field label={t('match.newLabel')} error={fieldError(t, errors.label?.message)}>
             {(aria) => (
               <Input {...aria} {...register('label')} placeholder={t('match.newPlaceholder')} />
             )}
           </Field>
-          <Field
-            label={t('match.importance')}
-            error={fieldError(t, errors.importance?.message)}
-            className="sm:w-44"
-          >
-            {(aria) => (
-              <Select {...aria} {...register('importance')}>
-                {REQUIREMENT_IMPORTANCES.map((value) => (
-                  <option key={value} value={value}>
-                    {importanceLabel(t, value)}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-          <Button type="submit" variant="primary">
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            {t('action.add')}
-          </Button>
+          <div className="flex flex-wrap items-end gap-3">
+            <Field
+              label={t('match.importance')}
+              error={fieldError(t, errors.importance?.message)}
+              className="min-w-[9rem] flex-1 sm:max-w-xs"
+            >
+              {(aria) => (
+                <Select {...aria} {...register('importance')}>
+                  {REQUIREMENT_IMPORTANCES.map((value) => (
+                    <option key={value} value={value}>
+                      {importanceLabel(t, value)}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+            <Button type="submit" variant="primary" className="shrink-0">
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              {t('action.add')}
+            </Button>
+          </div>
         </form>
 
         <p className="mt-3 flex items-start gap-2 text-xs leading-relaxed text-ink-muted">
