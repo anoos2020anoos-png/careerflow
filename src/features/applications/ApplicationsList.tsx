@@ -1,15 +1,16 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Briefcase, MapPin, Pencil, Trash2 } from 'lucide-react';
-import type { Application, ApplicationStatus } from '@/types';
+import type { Application, ApplicationStatus, SalaryExpectation } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusSelect } from '@/features/applications/StatusSelect';
 import { formatDateOnly, formatInstant } from '@/lib/dates';
 import { useT } from '@/i18n/i18n-context';
-import { arrangementLabel, employmentLabel, salaryLabels } from '@/i18n/labels';
-import { formatSalaryRange } from '@/lib/format';
+import type { Translate } from '@/i18n/i18n-context';
+import { arrangementLabel, employmentLabel, salaryText } from '@/i18n/labels';
+import { compareToExpectation } from '@/lib/salary';
 
 export interface ApplicationsListProps {
   applications: Application[];
@@ -19,6 +20,33 @@ export interface ApplicationsListProps {
   emptyAction?: ReactNode;
   emptyTitle: string;
   emptyDescription: string;
+  /** When set, each salary gets a short "meets / below" marker. */
+  salaryExpectation?: SalaryExpectation;
+}
+
+/**
+ * A compact marker for the list. Only the two definite outcomes get one; "not
+ * compared" cases are explained on the detail page instead, since a badge for
+ * them would be noise on every row in another currency.
+ */
+function SalaryMarker({
+  t,
+  application,
+  expectation,
+}: {
+  t: Translate;
+  application: Application;
+  expectation: SalaryExpectation | undefined;
+}) {
+  if (!expectation) return null;
+  const comparison = compareToExpectation(application, expectation);
+  if (comparison.kind === 'above' || comparison.kind === 'within') {
+    return <Badge tone="success">{t('salaryBadge.meets')}</Badge>;
+  }
+  if (comparison.kind === 'below') {
+    return <Badge tone="warning">{t('salaryBadge.below')}</Badge>;
+  }
+  return null;
 }
 
 export function ApplicationsList({
@@ -29,6 +57,7 @@ export function ApplicationsList({
   emptyAction,
   emptyTitle,
   emptyDescription,
+  salaryExpectation,
 }: ApplicationsListProps) {
   const t = useT();
 
@@ -77,12 +106,7 @@ export function ApplicationsList({
           </thead>
           <tbody>
             {applications.map((application) => {
-              const salary = formatSalaryRange(
-                application.salaryMin,
-                application.salaryMax,
-                application.salaryCurrency,
-                salaryLabels(t),
-              );
+              const salary = salaryText(t, application);
               return (
                 <tr
                   key={application.id}
@@ -96,7 +120,16 @@ export function ApplicationsList({
                       {application.jobTitle}
                     </Link>
                     <p className="text-ink-muted">{application.company}</p>
-                    {salary ? <p className="mt-0.5 text-xs text-ink-muted">{salary}</p> : null}
+                    {salary ? (
+                      <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+                        <span>{salary}</span>
+                        <SalaryMarker
+                          t={t}
+                          application={application}
+                          expectation={salaryExpectation}
+                        />
+                      </p>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3 align-top text-ink-muted">
                     <p>{application.location || t('common.none')}</p>
@@ -159,12 +192,7 @@ export function ApplicationsList({
       {/* Cards for narrow screens, where a six-column table would be cramped */}
       <ul className="flex flex-col gap-3 md:hidden">
         {applications.map((application) => {
-          const salary = formatSalaryRange(
-            application.salaryMin,
-            application.salaryMax,
-            application.salaryCurrency,
-            salaryLabels(t),
-          );
+          const salary = salaryText(t, application);
           return (
             <li key={application.id} className="cf-card p-4">
               <div className="flex items-start justify-between gap-3">
@@ -215,6 +243,7 @@ export function ApplicationsList({
                 <Badge>{arrangementLabel(t, application.workArrangement)}</Badge>
                 <Badge>{employmentLabel(t, application.employmentType)}</Badge>
                 {salary ? <Badge>{salary}</Badge> : null}
+                <SalaryMarker t={t} application={application} expectation={salaryExpectation} />
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-3">

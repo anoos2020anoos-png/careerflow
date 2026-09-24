@@ -1,13 +1,22 @@
+import { useId } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Field, Input, Select, Textarea } from '@/components/ui/Field';
 import { applicationFormSchema, type ApplicationFormValues } from '@/lib/schemas';
-import { useT } from '@/i18n/i18n-context';
+import { useI18n } from '@/i18n/i18n-context';
 import { fieldError } from '@/i18n/fieldError';
-import { arrangementLabel, employmentLabel, statusLabel } from '@/i18n/labels';
+import {
+  arrangementLabel,
+  currencyOptionLabel,
+  employmentLabel,
+  periodLabel,
+  statusLabel,
+} from '@/i18n/labels';
 import {
   APPLICATION_STATUSES,
+  COMMON_CURRENCIES,
   EMPLOYMENT_TYPES,
+  SALARY_PERIODS,
   WORK_ARRANGEMENTS,
 } from '@/types';
 
@@ -15,14 +24,36 @@ export interface ApplicationFormProps {
   formId: string;
   defaultValues: ApplicationFormValues;
   onSubmit: (values: ApplicationFormValues) => void;
+  /**
+   * Companies already in the tracker, offered as the user types so the same
+   * employer is spelled the same way every time — which is what lets the
+   * Companies page group applications correctly.
+   */
+  companySuggestions?: string[];
+}
+
+/**
+ * The listed currencies, plus the record's own if it is something else (an
+ * import in JPY, say), so opening and saving a record never changes its currency.
+ */
+function currencyChoices(current: string): string[] {
+  const code = current.trim().toUpperCase();
+  const listed: readonly string[] = COMMON_CURRENCIES;
+  return code && !listed.includes(code) ? [code, ...listed] : [...listed];
 }
 
 /**
  * The single source of truth for creating and editing an application.
  * Validation lives in `applicationFormSchema`; this component only renders it.
  */
-export function ApplicationForm({ formId, defaultValues, onSubmit }: ApplicationFormProps) {
-  const t = useT();
+export function ApplicationForm({
+  formId,
+  defaultValues,
+  onSubmit,
+  companySuggestions = [],
+}: ApplicationFormProps) {
+  const { t, locale } = useI18n();
+  const companyListId = useId();
   const {
     register,
     handleSubmit,
@@ -44,10 +75,18 @@ export function ApplicationForm({ formId, defaultValues, onSubmit }: Application
               {...aria}
               {...register('company')}
               autoComplete="organization"
+              list={companySuggestions.length > 0 ? companyListId : undefined}
               placeholder="Sahaab Cloud"
             />
           )}
         </Field>
+        {companySuggestions.length > 0 ? (
+          <datalist id={companyListId}>
+            {companySuggestions.map((company) => (
+              <option key={company} value={company} />
+            ))}
+          </datalist>
+        ) : null}
 
         <Field label={t('form.jobTitle')} required error={error(errors.jobTitle?.message)}>
           {(aria) => (
@@ -116,7 +155,7 @@ export function ApplicationForm({ formId, defaultValues, onSubmit }: Application
         </Field>
       </div>
 
-      <fieldset className="grid gap-4 sm:grid-cols-3">
+      <fieldset className="grid gap-4 sm:grid-cols-2">
         <legend className="mb-2 text-sm font-medium text-ink">{t('form.salaryLegend')}</legend>
 
         <Field label={t('form.salaryMin')} error={error(errors.salaryMin?.message)}>
@@ -149,14 +188,27 @@ export function ApplicationForm({ formId, defaultValues, onSubmit }: Application
           hint={t('form.currencyHint')}
         >
           {(aria) => (
-            <Input
-              {...aria}
-              {...register('salaryCurrency')}
-              maxLength={3}
-              dir="ltr"
-              placeholder="SAR"
-              className="uppercase"
-            />
+            <Select {...aria} {...register('salaryCurrency')}>
+              <option value="">{t('form.currencyNone')}</option>
+              {currencyChoices(defaultValues.salaryCurrency).map((code) => (
+                <option key={code} value={code}>
+                  {currencyOptionLabel(locale, code)}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+
+        <Field label={t('form.salaryPeriod')} error={error(errors.salaryPeriod?.message)}>
+          {(aria) => (
+            <Select {...aria} {...register('salaryPeriod')}>
+              {SALARY_PERIODS.map((period) => (
+                <option key={period} value={period}>
+                  {periodLabel(t, period)}
+                </option>
+              ))}
+              <option value="">{t('period.unspecified')}</option>
+            </Select>
           )}
         </Field>
       </fieldset>

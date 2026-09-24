@@ -26,13 +26,14 @@ import { DEMO_APPLICATION_COUNT } from '@/lib/demoData';
 import { DATA_VERSION } from '@/lib/schemas';
 import { STORAGE_KEY } from '@/lib/storage';
 
-import type { Application, Profile } from '@/types';
+import type { Application, CompanyDetails, Profile } from '@/types';
 import { cn } from '@/lib/cn';
 
 /** What a validated file carries: the records, and a profile if it had one. */
 interface PendingImport {
   applications: Application[];
   profile?: Profile;
+  companies?: CompanyDetails[];
 }
 
 type ImportFeedback =
@@ -79,7 +80,7 @@ function ChoiceButton({
 }
 
 export function SettingsPage() {
-  const { applications, profile, replaceAll, clearAll, resetToDemo } = useAppData();
+  const { applications, profile, companies, replaceAll, clearAll, resetToDemo } = useAppData();
   const { mode, setMode } = useTheme();
   const { locale, setLocale, t } = useI18n();
 
@@ -90,7 +91,7 @@ export function SettingsPage() {
   const [confirmReset, setConfirmReset] = useState(false);
 
   const handleExport = () => {
-    downloadJson(exportFileName(), serializeExport(applications, profile));
+    downloadJson(exportFileName(), serializeExport(applications, profile, companies));
   };
 
   const handleFile = async (file: File) => {
@@ -113,13 +114,17 @@ export function SettingsPage() {
       setFeedback({ kind: 'error', message: result.message, details: result.details });
       return;
     }
-    setPendingImport({ applications: result.applications, profile: result.profile });
+    setPendingImport({
+      applications: result.applications,
+      profile: result.profile,
+      companies: result.companies,
+    });
   };
 
   const confirmImport = () => {
     if (!pendingImport) return;
     const count = pendingImport.applications.length;
-    replaceAll(pendingImport.applications, pendingImport.profile);
+    replaceAll(pendingImport.applications, pendingImport.profile, pendingImport.companies);
     setPendingImport(null);
     setFeedback({
       kind: 'success',

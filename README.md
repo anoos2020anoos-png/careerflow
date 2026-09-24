@@ -37,11 +37,12 @@ visitor can try in ten seconds and that keeps their data on their own machine.
 - Create, view, edit and delete applications, with confirmation before anything
   destructive.
 - Fields for company, job title, posting link, location, work arrangement,
-  employment type, salary range and currency, application date, status, notes and
-  a next follow-up date.
+  employment type, salary range with its currency and pay period, application
+  date, status, notes and a next follow-up date.
 - Seven statuses: Saved, Applied, Screening, Interview, Offer, Rejected, Withdrawn.
-- Search by company or role; filter by status, work arrangement and employment
-  type; sort by application date, company or last updated.
+- Search by company or role; filter by status, work arrangement, employment type,
+  company sector, and whether the salary meets your expectation; sort by
+  application date, company, last updated or salary.
 - Two views of the same data: a table on wide screens (readable cards on narrow
   ones) and a Kanban board grouped by status.
 
@@ -71,6 +72,40 @@ visitor can try in ten seconds and that keeps their data on their own machine.
 
 Every figure is derived from the stored records on each render, so the dashboard
 updates the moment anything changes.
+
+**Salary and currency**
+
+- Each salary records its **pay period** — monthly, annual, daily or hourly —
+  because a number without one is ambiguous: offers in Saudi Arabia are normally
+  quoted monthly, elsewhere often annually, and a contract may be a day rate.
+- Currency is picked from a list with the Gulf currencies first, each named by
+  the browser in the interface language ("SAR — Saudi Riyal", "ريال سعودي"). A
+  code from an imported file that is not on the list is kept, not replaced.
+- An **expected salary** on the Background page. Every application with a salary
+  in the same currency shows where it sits against it — above, within, below, or
+  open-ended when only a minimum is stated — in the list and on the detail page.
+- Only exact conversions are made: annual ÷ 12 = monthly, and the converted
+  figure is shown. Nothing is converted between currencies, and a day or hour
+  rate is only compared with another of the same kind. Anything that cannot be
+  compared says so and why, instead of producing a guess.
+- Sort by salary (the top of each range as a monthly amount; currencies grouped,
+  never converted) and filter to the salaries that meet your expectation.
+- New applications start in your expectation's currency and period, or SAR per
+  month without one.
+
+**Companies**
+
+- A **Companies** page grouping your applications by employer: how many, at
+  which stages, how many still in play, when you last applied — with a link to
+  exactly those applications.
+- Details per company: **sector** (government, semi-government, private,
+  non-profit — a distinction that shapes hiring in Saudi Arabia), industry,
+  website and notes. The applications list can be filtered by sector.
+- **Rename** a company and every application under it follows. Renaming one
+  spelling to another ("Sahab Cloud" → "Sahaab Cloud") merges them, and the form
+  says so before you save.
+- The application form suggests companies already in your list, so the same
+  employer keeps one spelling.
 
 **Requirements and your background**
 
@@ -175,6 +210,8 @@ src/
 │   ├── applications.ts         Pure transformations over one application
 │   ├── metrics.ts              Dashboard calculations
 │   ├── match.ts                Requirements against the profile - counts, never a score
+│   ├── salary.ts               Pay periods and the expectation check - exact arithmetic only
+│   ├── companies.ts            Grouping by employer, rename and merge
 │   ├── filters.ts              Search, filtering and sorting
 │   ├── storage.ts              Versioned localStorage read/write, corruption handling
 │   ├── transfer.ts             JSON export and validated import
@@ -221,8 +258,18 @@ The whole collection is written to `localStorage` under `careerflow:data` as a
 versioned envelope:
 
 ```json
-{ "version": 1, "applications": [ /* … */ ] }
+{
+  "version": 3,
+  "applications": [ /* … */ ],
+  "profile": { "qualifications": [], "salaryExpectation": { /* optional */ } },
+  "companies": [ /* details the user saved about employers */ ]
+}
 ```
+
+Every change to that shape so far has been additive, so each migration is a
+version stamp: an older payload is valid newer data with the new fields empty,
+and they stay empty — a salary saved before pay periods existed is never assumed
+to be monthly.
 
 On startup `loadData()` returns one of three outcomes:
 
@@ -233,8 +280,8 @@ On startup `loadData()` returns one of three outcomes:
 | `unreadable` | Not JSON, fails schema validation, or a newer `version` | Starts empty, copies the original to `careerflow:data:unreadable-backup`, and shows a notice |
 
 The distinction between "no key" and "a key holding an empty list" is what makes
-**Clear all data** stick: clearing writes `{"version":1,"applications":[]}`
-rather than removing the key, so the next visit is not mistaken for a first visit
+**Clear all data** stick: clearing writes an envelope with an empty
+`applications` list rather than removing the key, so the next visit is not mistaken for a first visit
 and re-seeded. Only *Reset to demo data* removes the key.
 
 Reading back is validated with the same Zod vocabulary used for imports, so a
@@ -284,21 +331,27 @@ The suite covers the logic most likely to break silently:
 | File | What it pins down |
 | --- | --- |
 | `src/lib/applications.test.ts` | Creating and editing: trimming, money parsing, clearing optional fields, activity entries, form round-trips, and the validation rules (required fields, unusable links, salary ranges, impossible dates). |
-| `src/lib/filters.test.ts` | Search across company and title, case/accent insensitivity, OR within a filter and AND between filters, all three sort keys, and immutability. |
+| `src/lib/filters.test.ts` | Search across company and title, case/accent insensitivity, OR within a filter and AND between filters, every sort key, and immutability; salary sorting that leaves unrankable records last in both directions and groups rather than converts currencies; the salary-expectation, company and sector filters. |
+| `src/lib/salary.test.ts` | That annual ↔ monthly is the only conversion, that day rates, missing periods and other currencies are reported as "not compared" rather than guessed, every above / within / below / open-ended case, and the monthly value salaries are ranked by. |
+| `src/lib/companies.test.ts` | What counts as the same company (case, accents, Arabic diacritics — and nothing looser), grouping and ordering, companies kept for their details after their last application goes, and rename, merge and clear. |
+| `src/lib/format.test.ts` | Salary ranges with the currency written once, equal ends without an "approximately" sign, one-sided wording, and Arabic output with Western digits. |
 | `src/lib/metrics.test.ts` | Every dashboard figure against a fixed "today", weekly bucketing, exclusion of closed applications from upcoming interviews and open tasks, and the empty-data case. |
-| `src/lib/storage.test.ts` | Save/load round-trip, "cleared" vs "never visited", malformed JSON, schema violations, a newer format version, and the quarantine backup. |
+| `src/lib/storage.test.ts` | Save/load round-trip, "cleared" vs "never visited", malformed JSON, schema violations, a newer format version, the quarantine backup, and migration from versions 1 and 2 without inventing a pay period. |
 | `src/lib/transfer.test.ts` | Export shape, three accepted import shapes, and every rejection path — including that a rejected import never returns records, so it cannot cause data loss. |
 | `src/lib/outcomes.test.ts` | The track-record figures: what counts as a reply, that an application which reached Interview and was later rejected still counts as interviewed, that Saved-only records stay out of the denominator, that withdrawing is not a reply, and the median wait including the even-count case. |
 | `src/lib/match.test.ts` | The requirement counts, that an empty list reports "no requirements" rather than 0%, and the conservative matching rule — including that a degree in English does not pre-tick "English at business level". |
 | `src/pages/ProfilePage.test.tsx` | Through the real provider: adding, removing and persisting a qualification, that the demo data seeds no invented background, that a matching requirement arrives pre-ticked and a non-matching one does not, and that unticking a suggestion sticks. |
 | `src/pages/ApplicationsPage.test.tsx` | End-to-end through the real provider: adding an application, validation blocking a bad submit, Escape discarding a draft, search and status filtering, changing status, and the delete confirmation. |
+| `src/pages/CompaniesPage.test.tsx` | Through the real provider: grouping, merging two spellings by renaming one (with the warning shown first and the result persisted), the link to one company's applications, the sector filter, and the company filter arriving from the URL. |
+| `src/pages/SalaryExpectation.test.tsx` | Saving and reloading an expected salary, the meets / below markers in the list, no marker for a salary in another currency, and the salary filter. |
 | `src/pages/SettingsPage.test.tsx` | Clearing data without re-seeding, restoring the sample data, and the theme being remembered. |
 | `src/i18n/i18n.test.tsx` | That both dictionaries define the same keys with the same `{placeholders}` and no blank strings, that `fieldError` decodes a key with and without its argument and passes an unknown message through, and that switching language translates the interface, flips `dir` on the document and is remembered. |
 
 ## Deployment
 
-The app is a static bundle. `.github/workflows/deploy.yml` builds it and
-publishes it to GitHub Pages on every push to `main`.
+The app is a static bundle. `.github/workflows/deploy.yml` runs the test suite,
+builds it, and publishes it to GitHub Pages on every push to `main`. A push whose
+tests fail is never published: the live demo only ever shows a build that passed.
 
 Two details make it work on a project page:
 
@@ -473,6 +526,37 @@ version and `normalize()` fills the gaps before anything downstream sees the
 data. Nothing is quarantined and nothing is lost, which is the whole reason the
 envelope carried a `version` field from the first commit.
 
+**Salaries are converted only where the arithmetic is exact.** A year is twelve
+months, so annual and monthly figures are compared through ÷ 12, and the
+converted figure is shown next to the verdict so the step is visible. Every
+other conversion needs an assumption that would quietly become part of the
+answer — how many working days in a month turns a day rate into a monthly
+salary; an exchange rate turns SAR into AED, and a static site has nowhere to
+fetch one and no business shipping a stale table. So `lib/salary.ts` refuses
+them, and a comparison that cannot be made is reported with its reason instead of
+as a result. "Not compared" and "does not meet" are different things, and the UI
+never lets one pass for the other.
+
+**A missing pay period is never assumed.** Records saved before periods existed
+have none, and the form offers "Not specified" so opening and saving one of them
+does not stamp "monthly" on it. It would be the likely answer — which is exactly
+why it is dangerous: a wrong default looks like data.
+
+**Companies are names, not records the user has to create first.** Typing a
+company into an application is still all it takes; the Companies page groups by
+a normalised form of the name. The normalisation is deliberately narrow — case,
+accents, Arabic diacritics and spacing, nothing more — because a looser rule
+would merge employers the user never said were the same. Two genuinely different
+spellings are fixed by renaming one to the other, which the page offers and
+explains before saving. Details the user writes about a company are keyed the
+same way and kept even after its last application is deleted, so notes are never
+silently hidden.
+
+**The live site is only published from a passing build.** CI and deployment are
+separate workflows that both run on every push, so on their own a failing test
+would turn CI red while the broken build still went live. The deploy workflow
+runs the suite itself before building.
+
 **English is the source of truth for translations, and the compiler enforces the
 rest.** `messages.ts` defines the English dictionary as a plain object; its keys
 become `MessageKey`, and every other locale is typed `Record<MessageKey, string>`.
@@ -544,8 +628,9 @@ already goes there.
 - **Contacts per application** — recruiters and interviewers, with their own
   follow-up history.
 - **Documents per application** — which CV and cover letter version was sent.
-- **Richer analytics** — response rate, time-to-first-response, conversion
-  between stages, and how those vary by source.
+- **Where applications came from** — a source per application (referral, job
+  board, company site), so the track record could show which sources get replies.
+  Reply rate and time to first reply exist already; what is missing is the source.
 - **Calendar export** (`.ics`) for interviews.
 - **Undo** for deletions, instead of a confirmation dialog.
 - **End-to-end tests** with Playwright, covering the flows the component tests
@@ -554,6 +639,12 @@ already goes there.
   explain why a JSON file was rejected are still English only — they describe
   file-format problems and some come straight from Zod, so they need more than a
   lookup table.
+- **Proper Arabic plural forms.** Arabic changes the noun by number (طلب،
+  طلبان، طلبات، طلبًا), and the current one/many switch cannot express that, so
+  new Arabic counts are written as "label: number" (الطلبات: ٣), which is correct
+  for every number. `Intl.PluralRules` knows all six Arabic categories and is
+  the right way to replace both the workaround and the older strings that still
+  use a single plural form.
 - **More languages.** The structure takes a third without changes: add a
   dictionary and a `LOCALES` entry, and the compiler lists every string still
   missing.

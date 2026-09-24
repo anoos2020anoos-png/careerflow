@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { KanbanSquare, Plus, Table2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -10,7 +11,8 @@ import { KanbanBoard } from '@/features/applications/KanbanBoard';
 import { useAppData } from '@/state/app-data-context';
 import { useT } from '@/i18n/i18n-context';
 import { DEFAULT_FILTERS, filterAndSortApplications, type FilterState } from '@/lib/filters';
-import { emptyFormValues, toFormValues } from '@/lib/applications';
+import { emptyFormValues, salaryDefaultsFor, toFormValues } from '@/lib/applications';
+import { companyKey, companyNames } from '@/lib/companies';
 import { todayDateOnly } from '@/lib/dates';
 import type { ApplicationFormValues } from '@/lib/schemas';
 import type { Application } from '@/types';
@@ -19,19 +21,67 @@ import { cn } from '@/lib/cn';
 type ViewMode = 'table' | 'kanban';
 
 export function ApplicationsPage() {
-  const { applications, addApplication, editApplication, removeApplication, setStatus } =
-    useAppData();
+  const {
+    applications,
+    addApplication,
+    editApplication,
+    removeApplication,
+    setStatus,
+    profile,
+    companies,
+  } = useAppData();
   const t = useT();
 
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  // The company filter is part of the URL, so "View applications" on the
+  // Companies page is a real link: it survives a refresh and can be bookmarked.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const companyParam = searchParams.get('company');
+
+  const [filters, setFilters] = useState<FilterState>(() => ({
+    ...DEFAULT_FILTERS,
+    company: companyParam,
+  }));
+
+  useEffect(() => {
+    setFilters((current) =>
+      current.company === companyParam ? current : { ...current, company: companyParam },
+    );
+  }, [companyParam]);
+
+  const changeFilters = (next: FilterState) => {
+    setFilters(next);
+    if (next.company !== companyParam) {
+      const params = new URLSearchParams(searchParams);
+      if (next.company === null) params.delete('company');
+      else params.set('company', next.company);
+      setSearchParams(params, { replace: true });
+    }
+  };
+
+  const companyName = useMemo(() => {
+    if (filters.company === null) return undefined;
+    const match = applications.find(
+      (application) => companyKey(application.company) === filters.company,
+    );
+    return (
+      match?.company ?? companies.find((entry) => entry.key === filters.company)?.name
+    );
+  }, [applications, companies, filters.company]);
+
+  const suggestions = useMemo(() => companyNames(applications), [applications]);
+  const blankForm = () => emptyFormValues(todayDateOnly(), salaryDefaultsFor(profile));
   const [view, setView] = useState<ViewMode>('table');
   const [editing, setEditing] = useState<Application | null>(null);
   const [creating, setCreating] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Application | null>(null);
 
   const visible = useMemo(
-    () => filterAndSortApplications(applications, filters),
-    [applications, filters],
+    () =>
+      filterAndSortApplications(applications, filters, {
+        salaryExpectation: profile.salaryExpectation,
+        companies,
+      }),
+    [applications, filters, profile.salaryExpectation, companies],
   );
 
   const handleCreate = (values: ApplicationFormValues) => {
@@ -97,9 +147,11 @@ export function ApplicationsPage() {
 
       <FiltersBar
         state={filters}
-        onChange={setFilters}
+        onChange={changeFilters}
         resultCount={visible.length}
         totalCount={applications.length}
+        hasSalaryExpectation={profile.salaryExpectation !== undefined}
+        companyName={companyName}
       />
 
       {view === 'table' ? (
@@ -108,6 +160,7 @@ export function ApplicationsPage() {
           onStatusChange={setStatus}
           onEdit={setEditing}
           onDelete={setPendingDelete}
+          salaryExpectation={profile.salaryExpectation}
           emptyTitle={
             applications.length === 0
               ? t('applications.emptyTitle')
@@ -134,17 +187,19 @@ export function ApplicationsPage() {
       <ApplicationFormDialog
         open={creating}
         mode="create"
-        defaultValues={emptyFormValues(todayDateOnly())}
+        defaultValues={blankForm()}
         onSubmit={handleCreate}
         onClose={() => setCreating(false)}
+        companySuggestions={suggestions}
       />
 
       <ApplicationFormDialog
         open={editing !== null}
         mode="edit"
-        defaultValues={editing ? toFormValues(editing) : emptyFormValues(todayDateOnly())}
+        defaultValues={editing ? toFormValues(editing) : blankForm()}
         onSubmit={handleEdit}
         onClose={() => setEditing(null)}
+        companySuggestions={suggestions}
       />
 
       <ConfirmDialog

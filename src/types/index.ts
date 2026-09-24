@@ -41,6 +41,49 @@ export const INTERVIEW_TYPES = [
 ] as const;
 export type InterviewType = (typeof INTERVIEW_TYPES)[number];
 
+/**
+ * How often a salary figure is paid. Stored because a number without it is
+ * ambiguous: in Saudi Arabia offers are normally quoted monthly, elsewhere
+ * often annually, and a contract may be a day rate. Optional on a record,
+ * because applications saved before this field existed never said.
+ */
+export const SALARY_PERIODS = ['monthly', 'annual', 'daily', 'hourly'] as const;
+export type SalaryPeriod = (typeof SALARY_PERIODS)[number];
+
+/**
+ * Currencies offered first in the form, Gulf first. Any other ISO 4217 code is
+ * still accepted from an import and kept as-is.
+ */
+export const COMMON_CURRENCIES = [
+  'SAR',
+  'AED',
+  'KWD',
+  'QAR',
+  'BHD',
+  'OMR',
+  'EGP',
+  'JOD',
+  'USD',
+  'EUR',
+  'GBP',
+  'INR',
+  'PKR',
+  'PHP',
+  'TRY',
+  'CAD',
+  'AUD',
+] as const;
+
+/** Used when the applicant has not set an expectation to take it from. */
+export const DEFAULT_CURRENCY = 'SAR';
+
+/**
+ * Which part of the economy an employer sits in. In Saudi Arabia this shapes
+ * hiring timelines, benefits and job security enough that people sort by it.
+ */
+export const COMPANY_SECTORS = ['government', 'semi_government', 'private', 'non_profit'] as const;
+export type CompanySector = (typeof COMPANY_SECTORS)[number];
+
 export const REQUIREMENT_IMPORTANCES = ['essential', 'preferred'] as const;
 export type RequirementImportance = (typeof REQUIREMENT_IMPORTANCES)[number];
 
@@ -67,6 +110,7 @@ export const ACTIVITY_KINDS = [
   'requirement_removed',
   'requirement_met',
   'requirement_unmet',
+  'company_renamed',
 ] as const;
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number];
 
@@ -123,10 +167,22 @@ export interface Qualification {
  * It exists to answer one question honestly — "which of the things this posting
  * asks for do I actually have?" — and never to score the person.
  */
+/** What the applicant is looking to be paid, in their own currency and terms. */
+export interface SalaryExpectation {
+  amount: number;
+  currency: string;
+  period: SalaryPeriod;
+}
+
 export interface Profile {
   /** A one-line summary in the applicant's own words. Optional. */
   headline?: string;
   qualifications: Qualification[];
+  /**
+   * Compared against each application's stated range. Also supplies the
+   * default currency and period when a new application is added.
+   */
+  salaryExpectation?: SalaryExpectation;
   updatedAt: string;
 }
 
@@ -155,6 +211,8 @@ export interface Application {
   salaryMin?: number;
   salaryMax?: number;
   salaryCurrency?: string;
+  /** Absent on records saved before periods existed; never guessed. */
+  salaryPeriod?: SalaryPeriod;
   /** Calendar date the application was submitted or saved, `YYYY-MM-DD`. */
   appliedDate: string;
   status: ApplicationStatus;
@@ -170,11 +228,33 @@ export interface Application {
   activity: ActivityEntry[];
 }
 
+/**
+ * What the applicant has noted about an employer.
+ *
+ * Linked to applications by `key` — the normalised company name — rather than
+ * by an id on each application, so typing a company name is still all it takes
+ * to file an application under it, and details can exist before or after any
+ * particular application.
+ */
+export interface CompanyDetails {
+  /** `companyKey(name)`; see `src/lib/companies.ts`. */
+  key: string;
+  /** The spelling shown when no application carries this company any more. */
+  name: string;
+  sector?: CompanySector;
+  /** Free text, in the applicant's own words: "Fintech", "طاقة". */
+  industry?: string;
+  website?: string;
+  notes?: string;
+  updatedAt: string;
+}
+
 /** The shape written to `localStorage`. `version` allows future migrations. */
 export interface PersistedData {
   version: number;
   applications: Application[];
   profile: Profile;
+  companies: CompanyDetails[];
 }
 
 /**

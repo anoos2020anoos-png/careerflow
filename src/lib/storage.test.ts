@@ -118,6 +118,35 @@ describe('loadData', () => {
     }
   });
 
+  it('migrates a version 2 payload, leaving the new fields empty', () => {
+    const application = makeApplication({ id: 'v2', salaryMin: 20000, salaryCurrency: 'SAR' });
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ version: 2, applications: [application], profile: makeProfile() }),
+    );
+
+    const outcome = loadData();
+    expect(outcome.kind).toBe('loaded');
+    if (outcome.kind === 'loaded') {
+      expect(outcome.data.version).toBe(DATA_VERSION);
+      expect(outcome.data.companies).toEqual([]);
+      // A period is not invented for a salary that never had one.
+      expect(outcome.data.applications[0]).not.toHaveProperty('salaryPeriod');
+      expect(window.localStorage.getItem(CORRUPT_BACKUP_KEY)).toBeNull();
+    }
+  });
+
+  it('round-trips company details', () => {
+    saveData([], makeProfile(), [
+      { key: 'sahaab cloud', name: 'Sahaab Cloud', sector: 'private', updatedAt: '2026-01-01T00:00:00.000Z' },
+    ]);
+    const outcome = loadData();
+    expect(outcome.kind).toBe('loaded');
+    if (outcome.kind === 'loaded') {
+      expect(outcome.data.companies[0]?.sector).toBe('private');
+    }
+  });
+
   it('round-trips a profile', () => {
     saveData([], makeProfile([makeQualification('TypeScript')]));
     const outcome = loadData();

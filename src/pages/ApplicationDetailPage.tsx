@@ -16,11 +16,20 @@ import { TimelinePanel } from '@/features/detail/TimelinePanel';
 import { NotesPanel } from '@/features/detail/NotesPanel';
 import { RequirementsPanel } from '@/features/detail/RequirementsPanel';
 import { useAppData } from '@/state/app-data-context';
+import { companyKey, companyNames, detailsFor } from '@/lib/companies';
 import { useT } from '@/i18n/i18n-context';
-import { arrangementLabel, employmentLabel, relativeDay, salaryLabels } from '@/i18n/labels';
-import { emptyFormValues, toFormValues } from '@/lib/applications';
+import {
+  arrangementLabel,
+  comparisonText,
+  convertedRangeText,
+  employmentLabel,
+  relativeDay,
+  salaryText,
+  sectorLabel,
+} from '@/i18n/labels';
+import { emptyFormValues, salaryDefaultsFor, toFormValues } from '@/lib/applications';
 import { formatDateOnly, formatInstant, todayDateOnly } from '@/lib/dates';
-import { formatSalaryRange } from '@/lib/format';
+import { compareToExpectation, meetsExpectation } from '@/lib/salary';
 import { describeUrl } from '@/lib/urls';
 
 function DetailRow({ label, children }: { label: string; children: ReactNode }) {
@@ -49,6 +58,9 @@ export function ApplicationDetailPage() {
     addRequirement,
     toggleRequirement,
     removeRequirement,
+    profile,
+    applications,
+    companies,
   } = useAppData();
 
   const t = useT();
@@ -74,12 +86,16 @@ export function ApplicationDetailPage() {
     );
   }
 
-  const salary = formatSalaryRange(
-    application.salaryMin,
-    application.salaryMax,
-    application.salaryCurrency,
-    salaryLabels(t),
-  );
+  const salary = salaryText(t, application);
+  const expectation = profile.salaryExpectation;
+  const comparison = compareToExpectation(application, expectation);
+  const comparisonSentence = comparisonText(t, comparison, expectation);
+  const convertedNote = convertedRangeText(t, application, expectation);
+  const company = detailsFor(companies, application.company);
+  const thisCompanyKey = companyKey(application.company);
+  const sameCompanyCount = applications.filter(
+    (entry) => companyKey(entry.company) === thisCompanyKey,
+  ).length;
   const today = todayDateOnly();
 
   return (
@@ -136,7 +152,25 @@ export function ApplicationDetailPage() {
             <CardHeader title={t('detail.roleDetails')} />
             <CardBody>
               <dl className="divide-y divide-line sm:divide-y-0">
-                <DetailRow label={t('form.company')}>{application.company}</DetailRow>
+                <DetailRow label={t('form.company')}>
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    {application.company}
+                    {company?.sector ? (
+                      <Badge tone="brand">{sectorLabel(t, company.sector)}</Badge>
+                    ) : null}
+                  </span>
+                  {sameCompanyCount > 1 ? (
+                    <Link
+                      to={`/applications?company=${encodeURIComponent(thisCompanyKey)}`}
+                      className="mt-1 block text-xs font-medium text-brand underline-offset-4 hover:underline"
+                    >
+                      {t('detail.companyApplications', {
+                        count: sameCompanyCount,
+                        name: application.company,
+                      })}
+                    </Link>
+                  ) : null}
+                </DetailRow>
                 <DetailRow label={t('form.jobTitle')}>{application.jobTitle}</DetailRow>
                 <DetailRow label={t('form.location')}>
                   {application.location ? (
@@ -154,7 +188,24 @@ export function ApplicationDetailPage() {
                     <Badge>{employmentLabel(t, application.employmentType)}</Badge>
                   </span>
                 </DetailRow>
-                <DetailRow label={t('detail.salary')}>{salary ?? t('common.notRecorded')}</DetailRow>
+                <DetailRow label={t('detail.salary')}>
+                  {salary ?? t('common.notRecorded')}
+                  {comparisonSentence ? (
+                    <span
+                      className={
+                        'mt-1 block text-xs ' +
+                        (meetsExpectation(comparison)
+                          ? 'text-success'
+                          : comparison.kind === 'below'
+                            ? 'text-warning'
+                            : 'text-ink-muted')
+                      }
+                    >
+                      {comparisonSentence}
+                      {convertedNote ? <span className="block">{convertedNote}</span> : null}
+                    </span>
+                  ) : null}
+                </DetailRow>
                 <DetailRow label={t('detail.posting')}>
                   {application.jobUrl ? (
                     <ExternalLink href={application.jobUrl}>
@@ -218,7 +269,10 @@ export function ApplicationDetailPage() {
       <ApplicationFormDialog
         open={editing}
         mode="edit"
-        defaultValues={editing ? toFormValues(application) : emptyFormValues(today)}
+        defaultValues={
+          editing ? toFormValues(application) : emptyFormValues(today, salaryDefaultsFor(profile))
+        }
+        companySuggestions={companyNames(applications)}
         onSubmit={(values) => {
           editApplication(application.id, values);
           setEditing(false);

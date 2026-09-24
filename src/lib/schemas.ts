@@ -2,10 +2,12 @@ import { z } from 'zod';
 import {
   ACTIVITY_KINDS,
   APPLICATION_STATUSES,
+  COMPANY_SECTORS,
   EMPLOYMENT_TYPES,
   INTERVIEW_TYPES,
   QUALIFICATION_KINDS,
   REQUIREMENT_IMPORTANCES,
+  SALARY_PERIODS,
   WORK_ARRANGEMENTS,
 } from '@/types';
 import { isValidDateOnly, isValidTime } from '@/lib/dates';
@@ -76,6 +78,14 @@ export function parseMoney(value: string | undefined): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+const currencyCode = z
+  .string()
+  .trim()
+  .refine((value) => value === '' || /^[A-Za-z]{3}$/.test(value), issue('validation.currency'));
+
+/** `''` is the form's "not specified", so an older record round-trips untouched. */
+const optionalSalaryPeriod = z.union([z.enum(SALARY_PERIODS), z.literal('')]);
+
 const optionalHttpUrl = z
   .string()
   .trim()
@@ -101,13 +111,8 @@ export const applicationFormSchema = z
     employmentType: z.enum(EMPLOYMENT_TYPES),
     salaryMin: optionalMoney,
     salaryMax: optionalMoney,
-    salaryCurrency: z
-      .string()
-      .trim()
-      .refine(
-        (value) => value === '' || /^[A-Za-z]{3}$/.test(value),
-        issue('validation.currency'),
-      ),
+    salaryCurrency: currencyCode,
+    salaryPeriod: optionalSalaryPeriod,
     appliedDate: requiredDate,
     status: z.enum(APPLICATION_STATUSES),
     notes: optionalText(5000),
@@ -171,6 +176,39 @@ export const profileFormSchema = z.object({
   headline: optionalText(300),
 });
 
+/**
+ * The expected-salary form. All three blank means "no expectation"; an amount
+ * needs a currency, and a period is always chosen from a list.
+ */
+export const salaryExpectationFormSchema = z
+  .object({
+    amount: optionalMoney,
+    currency: currencyCode,
+    period: z.enum(SALARY_PERIODS),
+  })
+  .superRefine((values, ctx) => {
+    if (parseMoney(values.amount) !== undefined && values.currency.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['currency'],
+        message: issue('validation.currencyNeeded'),
+      });
+    }
+  });
+
+export type SalaryExpectationFormValues = z.infer<typeof salaryExpectationFormSchema>;
+
+export const companyDetailsFormSchema = z.object({
+  name: requiredText(120),
+  /** `''` means "not set". */
+  sector: z.union([z.enum(COMPANY_SECTORS), z.literal('')]),
+  industry: optionalText(120),
+  website: optionalHttpUrl,
+  notes: optionalText(5000),
+});
+
+export type CompanyDetailsFormValues = z.infer<typeof companyDetailsFormSchema>;
+
 export type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 /* ================================================================== */
@@ -225,9 +263,27 @@ export const qualificationSchema = z.object({
   createdAt: isoInstant,
 });
 
+export const salaryExpectationSchema = z.object({
+  amount: z.number().positive(),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  period: z.enum(SALARY_PERIODS),
+});
+
+export const companyDetailsSchema = z.object({
+  key: z.string().min(1).max(200),
+  name: z.string().min(1).max(200),
+  sector: z.enum(COMPANY_SECTORS).optional(),
+  industry: z.string().max(200).optional(),
+  // Checked again when rendered: `ExternalLink` only ever links http(s).
+  website: z.string().max(2048).optional(),
+  notes: z.string().max(20000).optional(),
+  updatedAt: isoInstant,
+});
+
 export const profileSchema = z.object({
   headline: z.string().max(1000).optional(),
   qualifications: z.array(qualificationSchema),
+  salaryExpectation: salaryExpectationSchema.optional(),
   updatedAt: isoInstant,
 });
 
@@ -242,6 +298,7 @@ export const applicationSchema = z.object({
   salaryMin: z.number().nonnegative().optional(),
   salaryMax: z.number().nonnegative().optional(),
   salaryCurrency: z.string().max(8).optional(),
+  salaryPeriod: z.enum(SALARY_PERIODS).optional(),
   appliedDate: dateOnly,
   status: z.enum(APPLICATION_STATUSES),
   notes: z.string().max(20000).optional(),
@@ -263,11 +320,19 @@ export const applicationSchema = z.object({
  * 2 — adds `Application.requirements` and a top-level `profile`. Both are
  *     optional in the schema and filled in by `migrate()`, so a version 1
  *     payload loads without the user losing anything.
+ * 3 — adds `Application.salaryPeriod`, `Profile.salaryExpectation` and the
+ *     top-level `companies`. All optional, and deliberately left empty on
+ *     older records: a missing period is not assumed to be monthly.
+ *
+ * The number still goes up for purely additive changes. An older build reading
+ * newer data would silently drop fields it does not know, so the version check
+ * in `loadData()` has to be able to refuse it.
  */
-export const DATA_VERSION = 2;
+export const DATA_VERSION = 3;
 
 export const persistedDataSchema = z.object({
   version: z.number().int().positive(),
   applications: z.array(applicationSchema),
   profile: profileSchema.optional(),
+  companies: z.array(companyDetailsSchema).optional(),
 });

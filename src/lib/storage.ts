@@ -1,4 +1,4 @@
-import type { Application, PersistedData, Profile } from '@/types';
+import type { Application, CompanyDetails, PersistedData, Profile } from '@/types';
 import { emptyProfile } from '@/types';
 import { DATA_VERSION, persistedDataSchema } from '@/lib/schemas';
 
@@ -35,10 +35,11 @@ export function isStorageAvailable(): boolean {
 /**
  * Applies forward migrations before validation.
  *
- * Version 2 added `Application.requirements` and a top-level `profile`. Both are
- * additive: a version 1 payload is valid version 2 data with those fields empty,
- * so the migration is a version stamp rather than a rewrite, and the schema
- * marks both optional so an un-migrated payload still parses.
+ * Every change so far has been additive — version 2 added requirements and the
+ * profile, version 3 salary periods, the salary expectation and company details
+ * — so an older payload is valid newer data with those fields empty. The
+ * migration is a version stamp rather than a rewrite, and the schema marks the
+ * new fields optional so an un-migrated payload still parses.
  */
 function migrate(raw: unknown): unknown {
   if (typeof raw !== 'object' || raw === null) return raw;
@@ -49,7 +50,11 @@ function migrate(raw: unknown): unknown {
     record.version = 1;
   }
 
+  // 1 -> 2 added requirements and the profile; 2 -> 3 added salary periods, the
+  // salary expectation and company details. Every step is additive, so each is
+  // a version stamp: the new fields stay absent until the user fills them in.
   if (record.version === 1) record.version = 2;
+  if (record.version === 2) record.version = 3;
 
   return record;
 }
@@ -62,6 +67,7 @@ function normalize(parsed: {
   version: number;
   applications: unknown[];
   profile?: Profile;
+  companies?: CompanyDetails[];
 }): PersistedData {
   return {
     version: parsed.version,
@@ -70,6 +76,7 @@ function normalize(parsed: {
       requirements: application.requirements ?? [],
     })),
     profile: parsed.profile ?? emptyProfile(new Date(0).toISOString()),
+    companies: parsed.companies ?? [],
   };
 }
 
@@ -118,13 +125,18 @@ function quarantine(storage: Storage, raw: string) {
   }
 }
 
-export function saveData(applications: Application[], profile?: Profile): boolean {
+export function saveData(
+  applications: Application[],
+  profile?: Profile,
+  companies: CompanyDetails[] = [],
+): boolean {
   const storage = getStorage();
   if (!storage) return false;
   const payload: PersistedData = {
     version: DATA_VERSION,
     applications,
     profile: profile ?? emptyProfile(new Date(0).toISOString()),
+    companies,
   };
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify(payload));

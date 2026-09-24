@@ -12,6 +12,7 @@ import {
 } from '@/lib/filters';
 import {
   APPLICATION_STATUSES,
+  COMPANY_SECTORS,
   EMPLOYMENT_TYPES,
   WORK_ARRANGEMENTS,
 } from '@/types';
@@ -19,6 +20,7 @@ import { useT } from '@/i18n/i18n-context';
 import {
   arrangementLabel,
   employmentLabel,
+  sectorLabel,
   sortLabel,
   statusLabel,
 } from '@/i18n/labels';
@@ -75,11 +77,17 @@ export function FiltersBar({
   onChange,
   resultCount,
   totalCount,
+  hasSalaryExpectation = false,
+  companyName,
 }: {
   state: FilterState;
   onChange: (next: FilterState) => void;
   resultCount: number;
   totalCount: number;
+  /** The salary filter only makes sense once an expectation exists. */
+  hasSalaryExpectation?: boolean;
+  /** Display name for `state.company`, shown on the removable chip. */
+  companyName?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const searchId = useId();
@@ -92,7 +100,9 @@ export function FiltersBar({
     state.statuses.length +
     state.arrangements.length +
     state.employmentTypes.length +
-    (state.onlyMeetingEssentials ? 1 : 0);
+    state.sectors.length +
+    (state.onlyMeetingEssentials ? 1 : 0) +
+    (state.onlyMeetingSalary ? 1 : 0);
   const ascending = state.sortDirection === 'asc';
 
   return (
@@ -194,6 +204,16 @@ export function FiltersBar({
               onChange({ ...state, employmentTypes: toggleValue(state.employmentTypes, value) })
             }
           />
+          <div>
+            <CheckboxGroup
+              legend={t('filters.sector')}
+              options={COMPANY_SECTORS}
+              label={(value) => sectorLabel(t, value)}
+              selected={state.sectors}
+              onToggle={(value) => onChange({ ...state, sectors: toggleValue(state.sectors, value) })}
+            />
+            <p className="mt-2 text-xs text-ink-muted">{t('filters.sectorHint')}</p>
+          </div>
 
           <div className="border-t border-line pt-4">
             <label className="flex cursor-pointer items-start gap-2.5 text-sm text-ink">
@@ -212,8 +232,54 @@ export function FiltersBar({
                 </span>
               </span>
             </label>
+
+            <label
+              className={cn(
+                'mt-3 flex items-start gap-2.5 text-sm',
+                hasSalaryExpectation ? 'cursor-pointer text-ink' : 'cursor-not-allowed text-ink-muted',
+              )}
+            >
+              <input
+                type="checkbox"
+                checked={state.onlyMeetingSalary}
+                disabled={!hasSalaryExpectation && !state.onlyMeetingSalary}
+                onChange={(event) =>
+                  onChange({ ...state, onlyMeetingSalary: event.target.checked })
+                }
+                className="mt-0.5 h-3.5 w-3.5 rounded border-line accent-brand"
+              />
+              <span>
+                {t('filters.meetsSalary')}
+                <span className="mt-0.5 block text-xs text-ink-muted">
+                  {hasSalaryExpectation
+                    ? t('filters.meetsSalaryHint')
+                    : t('filters.meetsSalaryNeedsExpectation')}
+                </span>
+              </span>
+            </label>
           </div>
         </div>
+      ) : null}
+
+      {state.company !== null ? (
+        <div>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-brand/30 bg-brand-soft py-1 pe-1.5 ps-3 text-sm font-medium text-brand">
+            {t('filters.company', { name: companyName ?? state.company })}
+            <button
+              type="button"
+              onClick={() => onChange({ ...state, company: null })}
+              className="rounded-full p-0.5 hover:bg-brand/10"
+              aria-label={t('filters.clearCompany')}
+              title={t('filters.clearCompany')}
+            >
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          </span>
+        </div>
+      ) : null}
+
+      {state.sortKey === 'salary' ? (
+        <p className="text-xs leading-relaxed text-ink-muted">{t('filters.salarySortNote')}</p>
       ) : null}
 
       <p className="text-sm text-ink-muted" role="status">

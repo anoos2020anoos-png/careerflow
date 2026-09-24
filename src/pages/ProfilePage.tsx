@@ -9,6 +9,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Field, Input, Select, Textarea } from '@/components/ui/Field';
 import { useAppData } from '@/state/app-data-context';
+import { SalaryExpectationCard } from '@/features/profile/SalaryExpectationCard';
 import { useT } from '@/i18n/i18n-context';
 import { fieldError } from '@/i18n/fieldError';
 import { plural, qualificationKindLabel } from '@/i18n/labels';
@@ -23,7 +24,8 @@ import { QUALIFICATION_KINDS } from '@/types';
  * scored, ranked or sent anywhere.
  */
 export function ProfilePage() {
-  const { profile, setHeadline, addQualification, removeQualification } = useAppData();
+  const { profile, setHeadline, addQualification, removeQualification, setSalaryExpectation } =
+    useAppData();
   const t = useT();
 
   const [headlineDraft, setHeadlineDraft] = useState(profile.headline ?? '');
@@ -55,6 +57,11 @@ export function ProfilePage() {
       <PageHeader title={t('profile.title')} description={t('profile.description')} />
 
       <div className="flex max-w-3xl flex-col gap-5">
+        <SalaryExpectationCard
+          expectation={profile.salaryExpectation}
+          onSave={setSalaryExpectation}
+        />
+
         <Card>
           <CardHeader title={t('profile.headline')} description={t('profile.headlineHint')} />
           <CardBody className="flex flex-col gap-3">

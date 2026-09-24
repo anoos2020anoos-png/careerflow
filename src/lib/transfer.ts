@@ -1,6 +1,11 @@
 import { z } from 'zod';
-import type { Application, Profile } from '@/types';
-import { applicationSchema, DATA_VERSION, profileSchema } from '@/lib/schemas';
+import type { Application, CompanyDetails, Profile } from '@/types';
+import {
+  applicationSchema,
+  companyDetailsSchema,
+  DATA_VERSION,
+  profileSchema,
+} from '@/lib/schemas';
 
 export const EXPORT_APP_ID = 'careerflow';
 
@@ -10,9 +15,14 @@ export interface ExportEnvelope {
   exportedAt: string;
   applications: Application[];
   profile?: Profile;
+  companies?: CompanyDetails[];
 }
 
-export function buildExport(applications: Application[], profile?: Profile): ExportEnvelope {
+export function buildExport(
+  applications: Application[],
+  profile?: Profile,
+  companies: CompanyDetails[] = [],
+): ExportEnvelope {
   const envelope: ExportEnvelope = {
     app: EXPORT_APP_ID,
     version: DATA_VERSION,
@@ -21,14 +31,22 @@ export function buildExport(applications: Application[], profile?: Profile): Exp
   };
   // Left out entirely when there is nothing in it, so an export from someone
   // who never filled in a profile does not carry an empty shell around.
-  if (profile && (profile.headline || profile.qualifications.length > 0)) {
+  if (
+    profile &&
+    (profile.headline || profile.qualifications.length > 0 || profile.salaryExpectation)
+  ) {
     envelope.profile = profile;
   }
+  if (companies.length > 0) envelope.companies = companies;
   return envelope;
 }
 
-export function serializeExport(applications: Application[], profile?: Profile): string {
-  return JSON.stringify(buildExport(applications, profile), null, 2);
+export function serializeExport(
+  applications: Application[],
+  profile?: Profile,
+  companies: CompanyDetails[] = [],
+): string {
+  return JSON.stringify(buildExport(applications, profile, companies), null, 2);
 }
 
 export function exportFileName(now = new Date()): string {
@@ -54,17 +72,22 @@ const importSchema = z.union([
     exportedAt: z.string().optional(),
     applications: z.array(applicationSchema),
     profile: profileSchema.optional(),
+    companies: z.array(companyDetailsSchema).optional(),
   }),
   z.object({
     applications: z.array(applicationSchema),
     profile: profileSchema.optional(),
+    companies: z.array(companyDetailsSchema).optional(),
   }),
   z.array(applicationSchema),
 ]);
 
 export type ImportResult =
-  /** `profile` is absent when the file carried none; the caller keeps its own. */
-  | { ok: true; applications: Application[]; profile?: Profile }
+  /**
+   * `profile` and `companies` are absent when the file carried none; the caller
+   * then keeps its own rather than wiping them.
+   */
+  | { ok: true; applications: Application[]; profile?: Profile; companies?: CompanyDetails[] }
   | { ok: false; message: string; details: string[] };
 
 function describeIssue(issue: z.ZodIssue): string {
@@ -149,9 +172,11 @@ export function parseImport(text: string): ImportResult {
   }));
 
   const profile = !Array.isArray(result.data) ? result.data.profile : undefined;
-  return profile
-    ? { ok: true, applications: normalized, profile }
-    : { ok: true, applications: normalized };
+  const companies = !Array.isArray(result.data) ? result.data.companies : undefined;
+  const accepted: Extract<ImportResult, { ok: true }> = { ok: true, applications: normalized };
+  if (profile) accepted.profile = profile;
+  if (companies) accepted.companies = companies;
+  return accepted;
 }
 
 /** Triggers a client-side download without any server round trip. */

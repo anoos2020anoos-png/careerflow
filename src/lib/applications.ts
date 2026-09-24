@@ -8,7 +8,10 @@ import type {
   Profile,
   Qualification,
   Requirement,
+  SalaryExpectation,
+  SalaryPeriod,
 } from '@/types';
+import { DEFAULT_CURRENCY } from '@/types';
 import type {
   ApplicationFormValues,
   InterviewFormValues,
@@ -65,6 +68,13 @@ export const EDIT_NOTES = 'notes';
  * fields to numbers and drops anything the user left blank.
  */
 function fieldsFromForm(values: ApplicationFormValues) {
+  const salaryMin = parseMoney(values.salaryMin);
+  const salaryMax = parseMoney(values.salaryMax);
+  // Currency and period describe an amount. With no amount they describe
+  // nothing, so they are not stored — otherwise every application would carry
+  // the form's default "SAR, monthly" whether or not a salary was ever given.
+  const hasSalary = salaryMin !== undefined || salaryMax !== undefined;
+
   return compact({
     company: values.company.trim(),
     jobTitle: values.jobTitle.trim(),
@@ -72,9 +82,10 @@ function fieldsFromForm(values: ApplicationFormValues) {
     location: values.location.trim(),
     workArrangement: values.workArrangement,
     employmentType: values.employmentType,
-    salaryMin: parseMoney(values.salaryMin),
-    salaryMax: parseMoney(values.salaryMax),
-    salaryCurrency: values.salaryCurrency.trim().toUpperCase(),
+    salaryMin,
+    salaryMax,
+    salaryCurrency: hasSalary ? values.salaryCurrency.trim().toUpperCase() : undefined,
+    salaryPeriod: hasSalary && values.salaryPeriod !== '' ? values.salaryPeriod : undefined,
     appliedDate: values.appliedDate,
     status: values.status,
     notes: values.notes.trim(),
@@ -90,6 +101,7 @@ function fieldsFromForm(values: ApplicationFormValues) {
     | 'salaryMin'
     | 'salaryMax'
     | 'salaryCurrency'
+    | 'salaryPeriod'
     | 'appliedDate'
     | 'status'
     | 'notes'
@@ -365,6 +377,24 @@ export function withoutQualification(profile: Profile, qualificationId: string):
   };
 }
 
+/** Sets or clears (`undefined`) the applicant's expected salary. */
+export function withSalaryExpectation(
+  profile: Profile,
+  expectation: SalaryExpectation | undefined,
+): Profile {
+  const next: Profile = { ...profile, updatedAt: nowIso() };
+  if (expectation) next.salaryExpectation = expectation;
+  else delete next.salaryExpectation;
+  return next;
+}
+
+/** The defaults a new application form should start from, given the profile. */
+export function salaryDefaultsFor(profile: Profile): SalaryDefaults {
+  return profile.salaryExpectation
+    ? { currency: profile.salaryExpectation.currency, period: profile.salaryExpectation.period }
+    : { currency: DEFAULT_CURRENCY, period: 'monthly' };
+}
+
 export function withHeadline(profile: Profile, headline: string): Profile {
   const trimmed = headline.trim();
   if ((profile.headline ?? '') === trimmed) return profile;
@@ -379,8 +409,23 @@ export function withHeadline(profile: Profile, headline: string): Profile {
 /* Form helpers                                                        */
 /* ================================================================== */
 
-/** Blank form, used by "Add application". */
-export function emptyFormValues(appliedDate: string): ApplicationFormValues {
+/** Where a new application's currency and period come from, if anywhere. */
+export interface SalaryDefaults {
+  currency: string;
+  period: SalaryPeriod;
+}
+
+/**
+ * Blank form, used by "Add application".
+ *
+ * The currency and period are prefilled — from the applicant's own salary
+ * expectation when there is one, otherwise SAR per month, which is how Saudi
+ * offers are normally quoted. They are only stored if an amount is entered.
+ */
+export function emptyFormValues(
+  appliedDate: string,
+  defaults: SalaryDefaults = { currency: DEFAULT_CURRENCY, period: 'monthly' },
+): ApplicationFormValues {
   return {
     company: '',
     jobTitle: '',
@@ -390,7 +435,8 @@ export function emptyFormValues(appliedDate: string): ApplicationFormValues {
     employmentType: 'full_time',
     salaryMin: '',
     salaryMax: '',
-    salaryCurrency: '',
+    salaryCurrency: defaults.currency,
+    salaryPeriod: defaults.period,
     appliedDate,
     status: 'applied',
     notes: '',
@@ -410,6 +456,9 @@ export function toFormValues(application: Application): ApplicationFormValues {
     salaryMin: application.salaryMin === undefined ? '' : String(application.salaryMin),
     salaryMax: application.salaryMax === undefined ? '' : String(application.salaryMax),
     salaryCurrency: application.salaryCurrency ?? '',
+    // Left blank rather than defaulted: saving an old record unchanged must
+    // not stamp a period on it that nobody chose.
+    salaryPeriod: application.salaryPeriod ?? '',
     appliedDate: application.appliedDate,
     status: application.status,
     notes: application.notes ?? '',

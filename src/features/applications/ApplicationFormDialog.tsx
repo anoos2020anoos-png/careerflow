@@ -11,12 +11,14 @@ export function ApplicationFormDialog({
   defaultValues,
   onSubmit,
   onClose,
+  companySuggestions,
 }: {
   open: boolean;
   mode: 'create' | 'edit';
   defaultValues: ApplicationFormValues;
   onSubmit: (values: ApplicationFormValues) => void;
   onClose: () => void;
+  companySuggestions?: string[];
 }) {
   const formId = useId();
   const t = useT();
@@ -47,6 +49,7 @@ export function ApplicationFormDialog({
         formId={formId}
         defaultValues={defaultValues}
         onSubmit={onSubmit}
+        companySuggestions={companySuggestions}
       />
     </Dialog>
   );

@@ -2,16 +2,20 @@ import type {
   ActivityEntry,
   Application,
   ApplicationStatus,
+  CompanyDetails,
+  CompanySector,
   EmploymentType,
   FollowUpTask,
   Interview,
   InterviewType,
   Requirement,
   RequirementImportance,
+  SalaryPeriod,
   WorkArrangement,
 } from '@/types';
 import { addDays, parseDateOnly, todayDateOnly } from '@/lib/dates';
 import { createId } from '@/lib/ids';
+import { companyKey } from '@/lib/companies';
 
 /**
  * Fictional sample data.
@@ -23,7 +27,8 @@ import { createId } from '@/lib/ids';
  * these rows assert that someone applied somewhere and was rejected or made an
  * offer, and attaching that to a real company would be a fabricated claim.
  *
- * Salary figures are annual SAR unless a record's notes say otherwise.
+ * Salaries are monthly SAR, which is how offers are normally quoted in Saudi
+ * Arabia; the two contracts are day rates and are recorded as such.
  *
  * Offsets are expressed in days relative to "today" at seed time so a first
  * time visitor always sees a dashboard with recent activity and genuinely
@@ -53,6 +58,7 @@ interface SeedApplication {
   salaryMin?: number;
   salaryMax?: number;
   salaryCurrency?: string;
+  salaryPeriod?: SalaryPeriod;
   /** Days before today the application was submitted. */
   appliedDaysAgo: number;
   status: ApplicationStatus;
@@ -84,9 +90,10 @@ const SEEDS: SeedApplication[] = [
     location: 'Riyadh',
     workArrangement: 'hybrid',
     employmentType: 'full_time',
-    salaryMin: 252000,
-    salaryMax: 300000,
+    salaryMin: 21000,
+    salaryMax: 25000,
     salaryCurrency: 'SAR',
+    salaryPeriod: 'monthly',
     appliedDaysAgo: 26,
     status: 'interview',
     notes:
@@ -131,9 +138,10 @@ const SEEDS: SeedApplication[] = [
     location: 'Remote (Saudi Arabia)',
     workArrangement: 'remote',
     employmentType: 'full_time',
-    salaryMin: 216000,
-    salaryMax: 264000,
+    salaryMin: 18000,
+    salaryMax: 22000,
     salaryCurrency: 'SAR',
+    salaryPeriod: 'monthly',
     appliedDaysAgo: 12,
     status: 'screening',
     notes: 'Small team, strong emphasis on writing. Recruiter replied within two days.',
@@ -153,9 +161,10 @@ const SEEDS: SeedApplication[] = [
     location: 'Dammam',
     workArrangement: 'onsite',
     employmentType: 'full_time',
-    salaryMin: 192000,
-    salaryMax: 240000,
+    salaryMin: 16000,
+    salaryMax: 20000,
     salaryCurrency: 'SAR',
+    salaryPeriod: 'monthly',
     appliedDaysAgo: 41,
     status: 'rejected',
     notes: 'Rejected after the technical round - they wanted deeper Kubernetes experience.',
@@ -179,9 +188,10 @@ const SEEDS: SeedApplication[] = [
     salaryMin: 1600,
     salaryMax: 1900,
     salaryCurrency: 'SAR',
+    salaryPeriod: 'daily',
     appliedDaysAgo: 6,
     status: 'applied',
-    notes: 'Six-month contract with an option to extend. Figures above are a day rate, not annual.',
+    notes: 'Six-month contract with an option to extend.',
     followUpInDays: 4,
     transitions: [{ to: 'applied', daysAgo: 6 }],
     tasks: [{ title: 'Follow up if no reply by the end of the week', dueInDays: 4 }],
@@ -192,9 +202,10 @@ const SEEDS: SeedApplication[] = [
     location: 'Jeddah',
     workArrangement: 'hybrid',
     employmentType: 'full_time',
-    salaryMin: 168000,
-    salaryMax: 204000,
+    salaryMin: 14000,
+    salaryMax: 17000,
     salaryCurrency: 'SAR',
+    salaryPeriod: 'monthly',
     appliedDaysAgo: 33,
     status: 'offer',
     notes:
@@ -222,9 +233,10 @@ const SEEDS: SeedApplication[] = [
     location: 'Khobar',
     workArrangement: 'hybrid',
     employmentType: 'full_time',
-    salaryMin: 204000,
-    salaryMax: 252000,
+    salaryMin: 17000,
+    salaryMax: 21000,
     salaryCurrency: 'SAR',
+    salaryPeriod: 'monthly',
     appliedDaysAgo: 3,
     status: 'applied',
     notes: 'Referred by a former colleague. Mentioned the referral in the cover letter.',
@@ -236,9 +248,10 @@ const SEEDS: SeedApplication[] = [
     location: 'Jeddah',
     workArrangement: 'onsite',
     employmentType: 'part_time',
-    salaryMin: 84000,
-    salaryMax: 108000,
+    salaryMin: 7000,
+    salaryMax: 9000,
     salaryCurrency: 'SAR',
+    salaryPeriod: 'monthly',
     appliedDaysAgo: 54,
     status: 'withdrawn',
     notes: 'Withdrew - the role turned out to be mostly CMS maintenance.',
@@ -254,9 +267,10 @@ const SEEDS: SeedApplication[] = [
     location: 'Remote (Saudi Arabia)',
     workArrangement: 'remote',
     employmentType: 'full_time',
-    salaryMin: 228000,
-    salaryMax: 276000,
+    salaryMin: 19000,
+    salaryMax: 23000,
     salaryCurrency: 'SAR',
+    salaryPeriod: 'monthly',
     appliedDaysAgo: 18,
     status: 'interview',
     notes: 'Payments domain. They asked for a short architecture write-up before the next round.',
@@ -277,9 +291,10 @@ const SEEDS: SeedApplication[] = [
     location: 'Riyadh',
     workArrangement: 'hybrid',
     employmentType: 'internship',
-    salaryMin: 60000,
-    salaryMax: 84000,
+    salaryMin: 5000,
+    salaryMax: 7000,
     salaryCurrency: 'SAR',
+    salaryPeriod: 'monthly',
     appliedDaysAgo: 61,
     status: 'rejected',
     notes: 'Internship cohort was already full. They suggested reapplying in the autumn.',
@@ -295,9 +310,10 @@ const SEEDS: SeedApplication[] = [
     location: 'Remote (Saudi Arabia)',
     workArrangement: 'remote',
     employmentType: 'full_time',
-    salaryMin: 264000,
-    salaryMax: 324000,
+    salaryMin: 22000,
+    salaryMax: 27000,
     salaryCurrency: 'SAR',
+    salaryPeriod: 'monthly',
     appliedDaysAgo: 0,
     status: 'saved',
     notes: 'Saved to apply this week. Needs a tailored cover letter about build tooling.',
@@ -310,9 +326,10 @@ const SEEDS: SeedApplication[] = [
     location: 'Riyadh',
     workArrangement: 'onsite',
     employmentType: 'full_time',
-    salaryMin: 180000,
-    salaryMax: 228000,
+    salaryMin: 15000,
+    salaryMax: 19000,
     salaryCurrency: 'SAR',
+    salaryPeriod: 'monthly',
     appliedDaysAgo: 9,
     status: 'applied',
     notes: 'Long application form. Confirmation email said four weeks to first response.',
@@ -327,9 +344,10 @@ const SEEDS: SeedApplication[] = [
     salaryMin: 1400,
     salaryMax: 1700,
     salaryCurrency: 'SAR',
+    salaryPeriod: 'daily',
     appliedDaysAgo: 22,
     status: 'screening',
-    notes: 'Portfolio-led process. They liked the WebGL experiments. Day rate, not annual.',
+    notes: 'Portfolio-led process. They liked the WebGL experiments.',
     followUpInDays: 6,
     transitions: [
       { to: 'applied', daysAgo: 22 },
@@ -345,9 +363,10 @@ const SEEDS: SeedApplication[] = [
     location: 'Dhahran',
     workArrangement: 'hybrid',
     employmentType: 'full_time',
-    salaryMin: 240000,
-    salaryMax: 288000,
+    salaryMin: 20000,
+    salaryMax: 24000,
     salaryCurrency: 'SAR',
+    salaryPeriod: 'monthly',
     appliedDaysAgo: 47,
     status: 'rejected',
     notes: 'No response for six weeks, then a standard rejection email.',
@@ -373,9 +392,10 @@ const SEEDS: SeedApplication[] = [
     location: 'Remote (Saudi Arabia)',
     workArrangement: 'remote',
     employmentType: 'full_time',
-    salaryMin: 198000,
-    salaryMax: 246000,
+    salaryMin: 16500,
+    salaryMax: 20500,
     salaryCurrency: 'SAR',
+    salaryPeriod: 'monthly',
     appliedDaysAgo: 15,
     status: 'screening',
     notes: 'Async-first company. First stage is a written exercise rather than a call.',
@@ -391,9 +411,10 @@ const SEEDS: SeedApplication[] = [
     location: 'Remote (Saudi Arabia)',
     workArrangement: 'remote',
     employmentType: 'full_time',
-    salaryMin: 186000,
-    salaryMax: 234000,
+    salaryMin: 15500,
+    salaryMax: 19500,
     salaryCurrency: 'SAR',
+    salaryPeriod: 'monthly',
     appliedDaysAgo: 30,
     status: 'saved',
     notes:
@@ -500,6 +521,7 @@ export function createDemoApplications(today = todayDateOnly()): Application[] {
     if (seed.salaryMin !== undefined) application.salaryMin = seed.salaryMin;
     if (seed.salaryMax !== undefined) application.salaryMax = seed.salaryMax;
     if (seed.salaryCurrency) application.salaryCurrency = seed.salaryCurrency;
+    if (seed.salaryPeriod) application.salaryPeriod = seed.salaryPeriod;
     if (seed.followUpInDays !== undefined) {
       application.nextFollowUpDate = addDays(today, seed.followUpInDays);
     }
@@ -509,3 +531,42 @@ export function createDemoApplications(today = todayDateOnly()): Application[] {
 }
 
 export const DEMO_APPLICATION_COUNT = SEEDS.length;
+
+/**
+ * Details for some of the sample companies, so the Companies page shows what it
+ * is for on a first visit. Just as invented as the companies themselves; about
+ * half are left blank on purpose, which is what a real tracker looks like.
+ */
+const DEMO_COMPANY_DETAILS: {
+  name: string;
+  sector: CompanySector;
+  industry: string;
+  notes?: string;
+}[] = [
+  { name: 'Sahaab Cloud', sector: 'private', industry: 'Cloud infrastructure' },
+  { name: 'Qamar Health', sector: 'private', industry: 'Healthcare technology' },
+  {
+    name: 'Nawras Education',
+    sector: 'semi_government',
+    industry: 'Education technology',
+    notes: 'Longer hiring process than private companies, but the offer came with housing allowance.',
+  },
+  { name: 'Turath Systems', sector: 'government', industry: 'Digital government services' },
+  { name: 'Yaqeen Financial', sector: 'private', industry: 'Banking and fintech' },
+  { name: 'Falak Aerospace', sector: 'semi_government', industry: 'Aerospace and defence' },
+  { name: 'Barq Delivery', sector: 'private', industry: 'Logistics and delivery' },
+];
+
+export function createDemoCompanies(now = new Date().toISOString()): CompanyDetails[] {
+  return DEMO_COMPANY_DETAILS.map((entry) => {
+    const details: CompanyDetails = {
+      key: companyKey(entry.name),
+      name: entry.name,
+      sector: entry.sector,
+      industry: entry.industry,
+      updatedAt: now,
+    };
+    if (entry.notes) details.notes = entry.notes;
+    return details;
+  });
+}

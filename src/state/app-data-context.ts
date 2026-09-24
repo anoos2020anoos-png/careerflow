@@ -1,5 +1,12 @@
 import { createContext, useContext } from 'react';
-import type { Application, ApplicationStatus, Profile } from '@/types';
+import type {
+  Application,
+  ApplicationStatus,
+  CompanyDetails,
+  Profile,
+  SalaryExpectation,
+} from '@/types';
+import type { CompanyDetailsInput } from '@/lib/companies';
 import type {
   ApplicationFormValues,
   InterviewFormValues,
@@ -38,8 +45,23 @@ export interface AppDataValue {
   setHeadline: (headline: string) => void;
   addQualification: (values: QualificationFormValues) => void;
   removeQualification: (qualificationId: string) => void;
+  /** Sets the expected salary, or clears it with `undefined`. */
+  setSalaryExpectation: (expectation: SalaryExpectation | undefined) => void;
 
-  replaceAll: (applications: Application[], profile?: Profile) => void;
+  /** What the user has noted about each employer, keyed by normalised name. */
+  companies: CompanyDetails[];
+  /**
+   * Saves a company's details; renames every application under it when the
+   * name changed, merging into an existing company if the new name is taken.
+   */
+  saveCompanyDetails: (previousKey: string, input: CompanyDetailsInput) => void;
+  removeCompanyDetails: (key: string) => void;
+
+  replaceAll: (
+    applications: Application[],
+    profile?: Profile,
+    companies?: CompanyDetails[],
+  ) => void;
   clearAll: () => void;
   resetToDemo: () => void;
 }

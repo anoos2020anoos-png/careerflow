@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { Application, ApplicationStatus, Profile } from '@/types';
+import type {
+  Application,
+  ApplicationStatus,
+  CompanyDetails,
+  Profile,
+  SalaryExpectation,
+} from '@/types';
 import { emptyProfile } from '@/types';
 import type {
   ApplicationFormValues,
@@ -17,6 +23,7 @@ import {
   withQualification,
   withRequirement,
   withRequirementToggled,
+  withSalaryExpectation,
   withStatus,
   withTask,
   withTaskToggled,
@@ -25,13 +32,19 @@ import {
   withoutRequirement,
   withoutTask,
 } from '@/lib/applications';
-import { createDemoApplications } from '@/lib/demoData';
+import { createDemoApplications, createDemoCompanies } from '@/lib/demoData';
+import {
+  withCompanyDetails,
+  withoutCompanyDetails,
+  type CompanyDetailsInput,
+} from '@/lib/companies';
 import { isStorageAvailable, loadData, removeStoredData, saveData } from '@/lib/storage';
 import { AppDataContext, type AppDataValue } from '@/state/app-data-context';
 
 interface InitialState {
   applications: Application[];
   profile: Profile;
+  companies: CompanyDetails[];
   notice: string | null;
 }
 
@@ -43,12 +56,14 @@ function readInitialState(): InitialState {
       return {
         applications: outcome.data.applications,
         profile: outcome.data.profile,
+        companies: outcome.data.companies,
         notice: null,
       };
     case 'unreadable':
       return {
         applications: [],
         profile: blank,
+        companies: [],
         notice: `${outcome.reason} CareerFlow started with an empty list and kept a copy of the original data in your browser storage under "careerflow:data:unreadable-backup".`,
       };
     case 'empty':
@@ -57,7 +72,12 @@ function readInitialState(): InitialState {
       // profile stays empty on purpose — inventing someone's qualifications
       // would be putting words in their mouth, and the requirements panel
       // explains itself without it.
-      return { applications: createDemoApplications(), profile: blank, notice: null };
+      return {
+        applications: createDemoApplications(),
+        profile: blank,
+        companies: createDemoCompanies(),
+        notice: null,
+      };
   }
 }
 
@@ -65,6 +85,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [initial] = useState(readInitialState);
   const [applications, setApplications] = useState<Application[]>(initial.applications);
   const [profile, setProfile] = useState<Profile>(initial.profile);
+  const [companies, setCompanies] = useState<CompanyDetails[]>(initial.companies);
   const [notice, setNotice] = useState<string | null>(initial.notice);
   const storageAvailable = useMemo(() => isStorageAvailable(), []);
   const quotaWarned = useRef(false);
@@ -73,14 +94,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   // so a refresh reads it back instead of generating a fresh set.
   useEffect(() => {
     if (!storageAvailable) return;
-    const saved = saveData(applications, profile);
+    const saved = saveData(applications, profile, companies);
     if (!saved && !quotaWarned.current) {
       quotaWarned.current = true;
       setNotice(
         'CareerFlow could not save to this browser (storage may be full or blocked). Your changes are held in memory and will be lost when you close the tab.',
       );
     }
-  }, [applications, profile, storageAvailable]);
+  }, [applications, profile, companies, storageAvailable]);
 
   const updateOne = useCallback(
     (id: string, transform: (application: Application) => Application) => {
@@ -135,29 +156,51 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         setProfile((current) => withQualification(current, values)),
       removeQualification: (qualificationId) =>
         setProfile((current) => withoutQualification(current, qualificationId)),
+      setSalaryExpectation: (expectation: SalaryExpectation | undefined) =>
+        setProfile((current) => withSalaryExpectation(current, expectation)),
 
-      replaceAll: (next, nextProfile) => {
+      companies,
+      saveCompanyDetails: (previousKey, input: CompanyDetailsInput) => {
+        // One transformation over both lists, so a rename and its details can
+        // never land half-applied.
+        const next = withCompanyDetails(
+          applications,
+          companies,
+          previousKey,
+          input,
+          new Date().toISOString(),
+        );
+        setApplications(next.applications);
+        setCompanies(next.details);
+      },
+      removeCompanyDetails: (key) => setCompanies((current) => withoutCompanyDetails(current, key)),
+
+      replaceAll: (next, nextProfile, nextCompanies) => {
         setApplications(next);
-        // A file with no profile section leaves the current one alone rather
-        // than wiping it: the user did not ask to lose it.
+        // A file with no profile or company section leaves the current one
+        // alone rather than wiping it: the user did not ask to lose it.
         if (nextProfile) setProfile(nextProfile);
+        if (nextCompanies) setCompanies(nextCompanies);
         setNotice(null);
       },
       clearAll: () => {
         // Writes an empty list rather than removing the key, so the next visit
-        // is not mistaken for a first visit and re-seeded.
+        // is not mistaken for a first visit and re-seeded. Company details are
+        // records too, so they go; the profile is the user's own and stays.
         setApplications([]);
+        setCompanies([]);
         setNotice(null);
       },
       resetToDemo: () => {
         removeStoredData();
         setApplications(createDemoApplications());
+        setCompanies(createDemoCompanies());
         // The profile is the user's own, not part of the sample data, so
         // restoring the demo applications deliberately leaves it untouched.
         setNotice(null);
       },
     };
-  }, [applications, profile, notice, storageAvailable, updateOne]);
+  }, [applications, profile, companies, notice, storageAvailable, updateOne]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }

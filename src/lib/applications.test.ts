@@ -3,6 +3,7 @@ import {
   applyFormValues,
   createApplication,
   emptyFormValues,
+  salaryDefaultsFor,
   toFormValues,
   withNotes,
   withStatus,
@@ -10,7 +11,7 @@ import {
   withTaskToggled,
 } from '@/lib/applications';
 import { applicationFormSchema } from '@/lib/schemas';
-import { makeApplication } from '@/test/factories';
+import { makeApplication, makeProfile } from '@/test/factories';
 
 const validValues = {
   ...emptyFormValues('2026-03-04'),
@@ -219,5 +220,48 @@ describe('applicationFormSchema', () => {
   it('rejects an impossible calendar date', () => {
     const result = applicationFormSchema.safeParse({ ...validValues, appliedDate: '2026-02-31' });
     expect(result.success).toBe(false);
+  });
+});
+
+describe('salary currency and period', () => {
+  it('does not store a currency or period when no amount was entered', () => {
+    // The form starts at "SAR, monthly"; that default must not end up on every
+    // record as if a salary had been given.
+    const application = createApplication(emptyFormValues('2026-03-04'));
+    expect(application).not.toHaveProperty('salaryCurrency');
+    expect(application).not.toHaveProperty('salaryPeriod');
+  });
+
+  it('stores the period alongside an amount', () => {
+    const application = createApplication({
+      ...emptyFormValues('2026-03-04'),
+      company: 'Sahaab Cloud',
+      jobTitle: 'Engineer',
+      salaryMin: '18000',
+      salaryMax: '24000',
+    });
+    expect(application.salaryCurrency).toBe('SAR');
+    expect(application.salaryPeriod).toBe('monthly');
+  });
+
+  it('saves an old record without a period unchanged, rather than assuming monthly', () => {
+    const legacy = makeApplication({ salaryMin: 20000, salaryMax: 25000, salaryCurrency: 'SAR' });
+    const values = toFormValues(legacy);
+    expect(values.salaryPeriod).toBe('');
+    expect(applyFormValues(legacy, values)).not.toHaveProperty('salaryPeriod');
+  });
+
+  it('starts a new form from the salary expectation when there is one', () => {
+    const profile = {
+      ...makeProfile(),
+      salaryExpectation: { amount: 30000, currency: 'AED', period: 'annual' as const },
+    };
+    const values = emptyFormValues('2026-03-04', salaryDefaultsFor(profile));
+    expect(values.salaryCurrency).toBe('AED');
+    expect(values.salaryPeriod).toBe('annual');
+  });
+
+  it('defaults to SAR per month without one', () => {
+    expect(salaryDefaultsFor(makeProfile())).toEqual({ currency: 'SAR', period: 'monthly' });
   });
 });

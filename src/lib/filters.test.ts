@@ -9,6 +9,8 @@ import {
   toggleValue,
 } from '@/lib/filters';
 import { makeApplication, makeRequirement } from '@/test/factories';
+import { companyKey } from '@/lib/companies';
+import type { CompanyDetails, SalaryExpectation } from '@/types';
 
 const northwind = makeApplication({
   id: 'a',
@@ -201,5 +203,93 @@ describe('the "only where I meet every essential" filter', () => {
     expect(DEFAULT_FILTERS.onlyMeetingEssentials).toBe(false);
     expect(hasActiveFilters(DEFAULT_FILTERS)).toBe(false);
     expect(hasActiveFilters(onlyEssentials)).toBe(true);
+  });
+});
+
+describe('sorting by salary', () => {
+  const monthly = (id: string, max: number, currency = 'SAR') =>
+    makeApplication({ id, salaryMin: max - 3000, salaryMax: max, salaryCurrency: currency, salaryPeriod: 'monthly' });
+
+  const high = monthly('high', 30000);
+  const low = monthly('low', 15000);
+  const annual = makeApplication({
+    id: 'annual',
+    salaryMin: 216000,
+    salaryMax: 264000, // 22,000 a month
+    salaryCurrency: 'SAR',
+    salaryPeriod: 'annual',
+  });
+  const dayRate = makeApplication({ id: 'day', salaryMin: 1500, salaryCurrency: 'SAR', salaryPeriod: 'daily' });
+  const none = makeApplication({ id: 'none' });
+
+  it('ranks by the monthly top of each range, converting annual figures', () => {
+    const order = sortApplications([low, annual, high], 'salary', 'desc').map((entry) => entry.id);
+    expect(order).toEqual(['high', 'annual', 'low']);
+  });
+
+  it('puts what cannot be ranked last, in either direction', () => {
+    const all = [none, low, dayRate, high];
+    expect(sortApplications(all, 'salary', 'desc').map((entry) => entry.id).slice(2)).toEqual(['none', 'day']);
+    expect(sortApplications(all, 'salary', 'asc').map((entry) => entry.id).slice(2)).toEqual(['none', 'day']);
+  });
+
+  it('groups currencies rather than converting between them', () => {
+    const aed = monthly('aed', 99000, 'AED');
+    const order = sortApplications([high, aed, low], 'salary', 'asc').map((entry) => entry.id);
+    // AED sorts before SAR by code; it is not treated as bigger or smaller.
+    expect(order).toEqual(['aed', 'low', 'high']);
+  });
+});
+
+describe('the salary-expectation filter', () => {
+  const expectation: SalaryExpectation = { amount: 20000, currency: 'SAR', period: 'monthly' };
+  const meets = makeApplication({ id: 'meets', salaryMin: 18000, salaryMax: 24000, salaryCurrency: 'SAR', salaryPeriod: 'monthly' });
+  const short = makeApplication({ id: 'short', salaryMin: 12000, salaryMax: 15000, salaryCurrency: 'SAR', salaryPeriod: 'monthly' });
+  const otherCurrency = makeApplication({ id: 'aed', salaryMin: 30000, salaryMax: 40000, salaryCurrency: 'AED', salaryPeriod: 'monthly' });
+  const unknown = makeApplication({ id: 'unknown' });
+  const on = { ...DEFAULT_FILTERS, onlyMeetingSalary: true };
+
+  it('keeps only ranges that reach the expectation', () => {
+    const kept = filterApplications([meets, short, otherCurrency, unknown], on, { salaryExpectation: expectation });
+    expect(kept.map((entry) => entry.id)).toEqual(['meets']);
+  });
+
+  it('keeps nothing when no expectation is set', () => {
+    expect(filterApplications([meets], on, {})).toHaveLength(0);
+  });
+
+  it('counts as an active filter', () => {
+    expect(hasActiveFilters(on)).toBe(true);
+  });
+});
+
+describe('the company and sector filters', () => {
+  const sahaab = makeApplication({ id: 's', company: 'Sahaab Cloud' });
+  const sahaabLower = makeApplication({ id: 's2', company: 'sahaab cloud' });
+  const barq = makeApplication({ id: 'b', company: 'Barq Delivery' });
+  const turath = makeApplication({ id: 't', company: 'Turath Systems' });
+  const companies: CompanyDetails[] = [
+    { key: companyKey('Sahaab Cloud'), name: 'Sahaab Cloud', sector: 'private', updatedAt: '2026-01-01T00:00:00.000Z' },
+    { key: companyKey('Turath Systems'), name: 'Turath Systems', sector: 'government', updatedAt: '2026-01-01T00:00:00.000Z' },
+  ];
+
+  it('narrows to one company, whatever the spelling', () => {
+    const kept = filterApplications([sahaab, sahaabLower, barq], { ...DEFAULT_FILTERS, company: companyKey('Sahaab Cloud') });
+    expect(kept.map((entry) => entry.id)).toEqual(['s', 's2']);
+  });
+
+  it('narrows by the sector saved on each company', () => {
+    const kept = filterApplications(
+      [sahaab, barq, turath],
+      { ...DEFAULT_FILTERS, sectors: ['government'] },
+      { companies },
+    );
+    expect(kept.map((entry) => entry.id)).toEqual(['t']);
+  });
+
+  it('does not match a company with no sector saved', () => {
+    // Barq has no details at all; "not set" is not an answer to "private?".
+    const kept = filterApplications([barq], { ...DEFAULT_FILTERS, sectors: ['private'] }, { companies });
+    expect(kept).toHaveLength(0);
   });
 });

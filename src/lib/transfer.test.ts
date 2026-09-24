@@ -150,3 +150,32 @@ describe('the profile in an export', () => {
     expect(result.applications[0]?.requirements).toEqual([]);
   });
 });
+
+describe('company details and the salary expectation in an export', () => {
+  const sahaab = {
+    key: 'sahaab cloud',
+    name: 'Sahaab Cloud',
+    sector: 'private' as const,
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+
+  it('round-trips company details', () => {
+    const result = accepted(parseImport(serializeExport([makeApplication()], makeProfile(), [sahaab])));
+    expect(result.companies).toEqual([sahaab]);
+  });
+
+  it('leaves companies out when there are none, so an import keeps the current ones', () => {
+    const envelope = JSON.parse(serializeExport([makeApplication()], makeProfile(), []));
+    expect('companies' in envelope).toBe(false);
+    expect(accepted(parseImport(JSON.stringify(envelope))).companies).toBeUndefined();
+  });
+
+  it('exports a profile that holds only a salary expectation', () => {
+    const profile = {
+      ...makeProfile(),
+      salaryExpectation: { amount: 20000, currency: 'SAR', period: 'monthly' as const },
+    };
+    const result = accepted(parseImport(serializeExport([makeApplication()], profile)));
+    expect(result.profile?.salaryExpectation?.amount).toBe(20000);
+  });
+});

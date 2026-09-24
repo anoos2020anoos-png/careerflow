@@ -45,6 +45,8 @@ function describe(t: Translate, entry: ActivityEntry): string {
       return detail ? t('timeline.requirementMet', { detail }) : t('timeline.updated');
     case 'requirement_unmet':
       return detail ? t('timeline.requirementUnmet', { detail }) : t('timeline.updated');
+    case 'company_renamed':
+      return detail ? t('timeline.companyRenamed', { detail }) : t('timeline.updated');
     default:
       return t('timeline.updated');
   }
