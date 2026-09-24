@@ -28,6 +28,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Install dependencies
         run: |
@@ -36,6 +37,12 @@ jobs:
           else
             npm install
           fi
+
+      - name: Run the test suite
+        # The CI workflow runs the same suite, but in parallel and with nothing
+        # waiting on it, so without this a failing push would still go live.
+        # The site is only published from a build whose tests pass.
+        run: npm test
 
       - name: Build
         # A project page is served from https://<user>.github.io/<repo>/, so the

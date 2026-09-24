@@ -24,8 +24,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          # Enable dependency caching once package-lock.json is committed:
-          #   cache: npm
+          # Keyed on package-lock.json, which is committed.
+          cache: npm
 
       - name: Install dependencies
         # `npm ci` needs a lockfile. The fallback keeps the very first push
