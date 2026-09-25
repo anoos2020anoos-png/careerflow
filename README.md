@@ -443,7 +443,9 @@ On the live demo, the server address is already filled in: the hosted API at
 `https://careerflow-api-yjwq.onrender.com`, running on Render's free plan with
 its PostgreSQL database on Neon, both in Frankfurt. The free plan puts the
 server to sleep when nobody has used it for a while, so the first sign-in after
-that can take up to a minute; the app waits that long before giving up. A build
+that can take up to a minute; the app waits that long before giving up. To
+keep that rare, a scheduled workflow (`.github/workflows/keep-api-awake.yml`)
+asks the server for its health every ten minutes. A build
 can suggest a different server with `VITE_API_URL`.
 
 To try it on your own computer instead (`npm run dev` suggests this server):
@@ -470,6 +472,13 @@ How it works:
 - **If the server refuses a change, the account's data is reloaded,** so the
   screen never keeps showing something that was not saved. If the server cannot
   be reached, the app says so; *Try again* reloads what the server has.
+- **No connection loses nothing.** If the server cannot be reached (or is
+  still waking up), the change stays on screen, the status says how many are
+  waiting, and they go out in order when it can be reached: tried again after
+  a pause, and at once when the browser comes back online. The waiting changes
+  and the account's data as last shown are kept in this browser, under keys of
+  their own, so closing the tab loses nothing and the app opens with the data
+  even offline. Signing out removes both.
 - **This browser's own data is never touched while signed in.** Local storage
   is not written, and signing out brings it back exactly as it was.
 - The session token is kept in `localStorage` (`careerflow:session`) and sent

@@ -10,7 +10,7 @@ import type {
 import type { CompanyDetailsInput } from '@/lib/companies';
 import { DATA_VERSION } from '@/lib/schemas';
 import { EXPORT_APP_ID } from '@/lib/transfer';
-import type { ApiClient, HttpMethod } from '@/lib/api';
+import { ApiError, type ApiClient, type HttpMethod } from '@/lib/api';
 
 /**
  * Keeping a signed-in account's data on the server.
@@ -376,31 +376,76 @@ export async function loadAccountData(client: ApiClient): Promise<AppData> {
 /* ------------------------------------------------------------------ */
 
 export interface SyncQueueHandlers {
-  send: (operation: SyncOperation) => Promise<unknown>;
+  /** `attempt` is 1 the first time, and counts up while the network is down. */
+  send: (operation: SyncOperation, attempt: number) => Promise<unknown>;
   /** `latest` is false when a later request for the same target is waiting. */
   onResult: (operation: SyncOperation, body: unknown, latest: boolean) => void;
   /** Called once; every request still waiting has been dropped. */
   onError: (operation: SyncOperation, error: unknown) => void;
-  onPendingChange?: (pending: number) => void;
+  /** Called whenever what is waiting changes, with a copy of it. */
+  onPendingChange?: (waiting: SyncOperation[]) => void;
+  /** The server could not be reached (`true`), or can be again (`false`). */
+  onOfflineChange?: (offline: boolean) => void;
+}
+
+export interface SyncQueueOptions {
+  /** Waits between attempts while the server cannot be reached; the last repeats. */
+  retryDelaysMs?: number[];
+  /** Which failures mean "try again later" rather than "the server refused". */
+  isRetryable?: (error: unknown) => boolean;
 }
 
 /**
- * Sends requests one at a time, in the order the changes were made. The first
- * failure stops the queue and drops what is left, because later requests may
- * depend on the one that failed; the caller then reloads from the server.
+ * Failures that say nothing about the change itself: no answer at all, or a
+ * gateway saying the server behind it is not up (as a sleeping server on a
+ * free plan does while it wakes).
+ */
+export function isRetryableError(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false;
+  return (
+    error.code === 'network_error' ||
+    error.code === 'timeout' ||
+    error.status === 502 ||
+    error.status === 503 ||
+    error.status === 504
+  );
+}
+
+/**
+ * Sends requests one at a time, in the order the changes were made.
+ *
+ * When the server cannot be reached, nothing is lost: the request stays at the
+ * front and is tried again after a pause (and at once when `retryNow` is
+ * called, as it is when the browser comes back online), with everything behind
+ * it waiting its turn. When the server refuses a request, the queue stops and
+ * drops what is left, because later requests may depend on the one that
+ * failed; the caller then reloads from the server.
  */
 export class SyncQueue {
   private readonly handlers: SyncQueueHandlers;
+  private readonly retryDelaysMs: number[];
+  private readonly isRetryable: (error: unknown) => boolean;
   private waiting: SyncOperation[] = [];
+  private readonly attempts = new WeakMap<SyncOperation, number>();
   private running = false;
   private generation = 0;
+  private offlineSince: number | null = null;
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private wake: (() => void) | null = null;
 
-  constructor(handlers: SyncQueueHandlers) {
+  constructor(handlers: SyncQueueHandlers, options: SyncQueueOptions = {}) {
     this.handlers = handlers;
+    this.retryDelaysMs = options.retryDelaysMs ?? [2_000, 5_000, 10_000, 20_000, 30_000];
+    this.isRetryable = options.isRetryable ?? isRetryableError;
   }
 
   get pending(): number {
     return this.waiting.length;
+  }
+
+  /** True while the server cannot be reached and changes are waiting for it. */
+  get offline(): boolean {
+    return this.offlineSince !== null;
   }
 
   /**
@@ -425,48 +470,106 @@ export class SyncQueue {
   push(operations: SyncOperation[]): void {
     if (operations.length === 0) return;
     this.waiting.push(...operations);
-    this.handlers.onPendingChange?.(this.pending);
+    this.changed();
     void this.run();
+  }
+
+  /** Stops waiting out a pause and tries the server again now. */
+  retryNow(): void {
+    this.wake?.();
   }
 
   /** Drops everything waiting. A request already sent is not applied. */
   clear(): void {
     this.waiting = [];
     this.generation += 1;
-    this.handlers.onPendingChange?.(0);
+    this.wake?.();
+    this.setOffline(false);
+    this.changed();
+  }
+
+  private changed(): void {
+    this.handlers.onPendingChange?.([...this.waiting]);
+  }
+
+  private setOffline(offline: boolean): void {
+    if (offline === this.offline) return;
+    this.offlineSince = offline ? Date.now() : null;
+    this.handlers.onOfflineChange?.(offline);
+  }
+
+  private pause(failures: number): Promise<void> {
+    const delays = this.retryDelaysMs;
+    const delay = delays[Math.min(failures - 1, delays.length - 1)] ?? 30_000;
+    return new Promise((resolve) => {
+      const done = () => {
+        if (this.retryTimer) clearTimeout(this.retryTimer);
+        this.retryTimer = null;
+        this.wake = null;
+        resolve();
+      };
+      this.wake = done;
+      this.retryTimer = setTimeout(done, delay);
+    });
   }
 
   private async run(): Promise<void> {
     if (this.running) return;
     this.running = true;
     const generation = this.generation;
+    let failuresInARow = 0;
     try {
       while (this.waiting.length > 0 && generation === this.generation) {
         const operation = this.waiting[0] as SyncOperation;
+        const attempt = (this.attempts.get(operation) ?? 0) + 1;
+        this.attempts.set(operation, attempt);
         let body: unknown;
         try {
-          body = await this.handlers.send(operation);
+          body = await this.handlers.send(operation, attempt);
         } catch (error) {
           if (generation !== this.generation) return;
+          if (this.isRetryable(error)) {
+            failuresInARow += 1;
+            this.setOffline(true);
+            await this.pause(failuresInARow);
+            continue;
+          }
           this.waiting = [];
-          this.handlers.onPendingChange?.(0);
+          this.setOffline(false);
+          this.changed();
           this.handlers.onError(operation, error);
           return;
         }
         if (generation !== this.generation) return;
+        failuresInARow = 0;
+        this.setOffline(false);
         this.waiting.shift();
         const latest = !this.waiting.some(
           (next) => next.target === operation.target || next.target === 'all' || operation.target === 'all',
         );
         this.handlers.onResult(operation, body, latest);
-        this.handlers.onPendingChange?.(this.pending);
+        this.changed();
       }
     } finally {
       this.running = false;
       // Requests pushed after a `clear()` while one was in flight.
-      if (this.waiting.length > 0) void this.run();
+      if (this.waiting.length > 0 && generation !== this.generation) void this.run();
     }
   }
+}
+
+/**
+ * Whether a request that failed on the way can be counted as done when it is
+ * sent again. If the first attempt reached the server but its answer was lost,
+ * the second finds the work already done: a create with the same id is a
+ * conflict, a delete finds nothing. Both are what was wanted.
+ */
+export function alreadyApplied(operation: SyncOperation, attempt: number, error: unknown): boolean {
+  if (attempt < 2 || !(error instanceof ApiError)) return false;
+  return (
+    (operation.method === 'POST' && error.status === 409) ||
+    (operation.method === 'DELETE' && error.status === 404)
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -540,5 +643,103 @@ export function lastServerUrl(): string {
     return storage()?.getItem(SERVER_URL_KEY) || DEFAULT_SERVER_URL;
   } catch {
     return DEFAULT_SERVER_URL;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Working offline                                                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * While signed in, two things are kept in this browser so the account keeps
+ * working without a connection, and survives the tab being closed:
+ *
+ * - the account's data as last shown, so the app opens with it even when the
+ *   server cannot be reached;
+ * - the changes not yet sent, so they go out the next time it can be.
+ *
+ * Both are keyed by server and email, kept apart from the data this browser
+ * holds for itself when signed out, and removed on signing out.
+ */
+const PENDING_PREFIX = 'careerflow:pending:';
+const CACHE_PREFIX = 'careerflow:account-cache:';
+
+function accountKey(session: Pick<Session, 'serverUrl' | 'email'>): string {
+  return `${session.serverUrl}|${session.email}`;
+}
+
+function isOperation(value: unknown): value is SyncOperation {
+  if (!value || typeof value !== 'object') return false;
+  const operation = value as Record<string, unknown>;
+  return (
+    ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'].includes(operation.method as string) &&
+    typeof operation.path === 'string' &&
+    operation.path.startsWith('/') &&
+    ['application', 'profile', 'reload', 'none'].includes(operation.result as string) &&
+    typeof operation.target === 'string'
+  );
+}
+
+export function savePendingOperations(session: Session, operations: SyncOperation[]): void {
+  try {
+    const store = storage();
+    if (!store) return;
+    const key = PENDING_PREFIX + accountKey(session);
+    if (operations.length === 0) store.removeItem(key);
+    else store.setItem(key, JSON.stringify(operations));
+  } catch {
+    // Full or blocked storage: the changes still go out while the tab is open.
+  }
+}
+
+export function readPendingOperations(session: Session): SyncOperation[] {
+  try {
+    const raw = storage()?.getItem(PENDING_PREFIX + accountKey(session));
+    if (!raw) return [];
+    const value: unknown = JSON.parse(raw);
+    // All or nothing: a list with a gap in it could apply changes out of order.
+    return Array.isArray(value) && value.every(isOperation) ? value : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveAccountCache(session: Session, data: AppData): void {
+  try {
+    storage()?.setItem(CACHE_PREFIX + accountKey(session), JSON.stringify(data));
+  } catch {
+    // Only a convenience; the server still has everything.
+  }
+}
+
+export function readAccountCache(session: Session): AppData | null {
+  try {
+    const raw = storage()?.getItem(CACHE_PREFIX + accountKey(session));
+    if (!raw) return null;
+    const value = JSON.parse(raw) as Partial<AppData> | null;
+    if (
+      !value ||
+      !Array.isArray(value.applications) ||
+      !Array.isArray(value.companies) ||
+      !value.profile ||
+      typeof value.profile !== 'object' ||
+      !Array.isArray(value.profile.qualifications)
+    ) {
+      return null;
+    }
+    return value as AppData;
+  } catch {
+    return null;
+  }
+}
+
+/** Forgets what this browser kept for an account: on signing out, or when the session ends. */
+export function forgetAccount(session: Pick<Session, 'serverUrl' | 'email'>): void {
+  try {
+    const store = storage();
+    store?.removeItem(PENDING_PREFIX + accountKey(session));
+    store?.removeItem(CACHE_PREFIX + accountKey(session));
+  } catch {
+    // Nothing more can be done.
   }
 }

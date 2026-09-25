@@ -41,6 +41,13 @@ export interface AccountState {
   phase: 'local' | 'loading' | 'ready' | 'unavailable';
   /** Changes are on their way to the server. */
   saving: boolean;
+  /**
+   * The server cannot be reached; changes are kept and sent when it can be.
+   * They are also kept if the tab is closed meanwhile.
+   */
+  offline: boolean;
+  /** How many requests are still to reach the server. */
+  unsent: number;
   problem: SyncProblem | null;
   /**
    * After signing in to an empty account: how many applications this browser

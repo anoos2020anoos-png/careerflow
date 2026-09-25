@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { ApiError } from '@/lib/api';
 import {
   SyncQueue,
+  alreadyApplied,
+  forgetAccount,
+  isRetryableError,
+  readAccountCache,
+  readPendingOperations,
+  saveAccountCache,
+  savePendingOperations,
   applicationFields,
   applicationOperations,
   dataOperations,
@@ -300,6 +308,165 @@ describe('the request queue', () => {
     release();
     await queue.idle();
     expect(applied).toEqual([]);
+  });
+});
+
+describe('the request queue without a connection', () => {
+  const operation = (path: string, target = 'application:x', method: SyncOperation['method'] = 'PATCH'): SyncOperation => ({
+    method,
+    path,
+    result: 'application',
+    target,
+  });
+  const unreachable = () => new ApiError(0, 'network_error', 'The server could not be reached.');
+
+  it('keeps a change the server could not receive, and sends it, in order, once it can', async () => {
+    let up = false;
+    const sent: string[] = [];
+    const offline: boolean[] = [];
+    const waiting: number[] = [];
+    const queue = new SyncQueue(
+      {
+        send: async (op) => {
+          if (!up) throw unreachable();
+          sent.push(op.path);
+        },
+        onResult: () => {},
+        onError: () => {
+          throw new Error('nothing should be dropped');
+        },
+        onOfflineChange: (value) => offline.push(value),
+        onPendingChange: (list) => waiting.push(list.length),
+      },
+      { retryDelaysMs: [5] },
+    );
+
+    queue.push([operation('/first'), operation('/second', 'application:y')]);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(queue.offline).toBe(true);
+    expect(queue.pending).toBe(2);
+    expect(sent).toEqual([]);
+
+    queue.push([operation('/third')]);
+    up = true;
+    await queue.idle();
+    expect(sent).toEqual(['/first', '/second', '/third']);
+    expect(queue.offline).toBe(false);
+    expect(offline).toEqual([true, false]);
+    expect(waiting.at(-1)).toBe(0);
+  });
+
+  it('tries again at once when asked, without waiting out the pause', async () => {
+    let up = false;
+    const sent: string[] = [];
+    const queue = new SyncQueue(
+      {
+        send: async (op) => {
+          if (!up) throw unreachable();
+          sent.push(op.path);
+        },
+        onResult: () => {},
+        onError: () => {},
+      },
+      { retryDelaysMs: [60_000] },
+    );
+    queue.push([operation('/waiting')]);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    up = true;
+    queue.retryNow();
+    await queue.idle(1_000);
+    expect(sent).toEqual(['/waiting']);
+  });
+
+  it('treats a gateway error from a waking server like no connection, and a refusal as a refusal', async () => {
+    expect(isRetryableError(new ApiError(503, 'http_error', 'Unavailable'))).toBe(true);
+    expect(isRetryableError(new ApiError(0, 'timeout', 'Slow'))).toBe(true);
+    expect(isRetryableError(new ApiError(400, 'validation_failed', 'No'))).toBe(false);
+    expect(isRetryableError(new Error('something else'))).toBe(false);
+  });
+
+  it('stops waiting when cleared, and sends nothing afterwards', async () => {
+    const sent: string[] = [];
+    const queue = new SyncQueue(
+      {
+        send: async () => {
+          throw unreachable();
+        },
+        onResult: (op) => sent.push(op.path),
+        onError: () => {},
+      },
+      { retryDelaysMs: [60_000] },
+    );
+    queue.push([operation('/never')]);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    queue.clear();
+    await queue.idle(1_000);
+    expect(queue.pending).toBe(0);
+    expect(queue.offline).toBe(false);
+    expect(sent).toEqual([]);
+  });
+
+  it('counts a repeated create or delete as done when the first attempt got through', () => {
+    const create = operation('/applications', 'application:x', 'POST');
+    const remove = operation('/applications/x/tasks/t', 'application:x', 'DELETE');
+    const conflict = new ApiError(409, 'conflict', 'Exists');
+    const missing = new ApiError(404, 'not_found', 'Gone');
+    expect(alreadyApplied(create, 2, conflict)).toBe(true);
+    expect(alreadyApplied(remove, 3, missing)).toBe(true);
+    // The first time, the same answers are real refusals.
+    expect(alreadyApplied(create, 1, conflict)).toBe(false);
+    expect(alreadyApplied(remove, 1, missing)).toBe(false);
+    expect(alreadyApplied(operation('/applications/x'), 2, missing)).toBe(false);
+  });
+});
+
+describe('what is kept in this browser for an account', () => {
+  const session = {
+    serverUrl: 'https://api.example',
+    token: 'A'.repeat(43),
+    email: 'reem@example.com',
+    expiresAt: '2099-01-01T00:00:00.000Z',
+  };
+  const other = { ...session, email: 'someone@example.com' };
+  const op: SyncOperation = { method: 'PATCH', path: '/profile', body: { headline: 'x' }, result: 'profile', target: 'profile' };
+
+  afterEach(() => {
+    forgetAccount(session);
+    forgetAccount(other);
+  });
+
+  it('keeps the unsent changes per account, and removes them once sent', () => {
+    savePendingOperations(session, [op]);
+    expect(readPendingOperations(session)).toEqual([op]);
+    expect(readPendingOperations(other)).toEqual([]);
+    savePendingOperations(session, []);
+    expect(readPendingOperations(session)).toEqual([]);
+  });
+
+  it('ignores a damaged list rather than sending part of it', () => {
+    window.localStorage.setItem(
+      'careerflow:pending:https://api.example|reem@example.com',
+      JSON.stringify([op, { method: 'PATCH', path: 'no-slash', result: 'profile', target: 'profile' }]),
+    );
+    expect(readPendingOperations(session)).toEqual([]);
+    window.localStorage.setItem('careerflow:pending:https://api.example|reem@example.com', '{not json');
+    expect(readPendingOperations(session)).toEqual([]);
+  });
+
+  it('keeps the account data as last shown, and forgets both on request', () => {
+    const data = { applications: [], profile: { qualifications: [], updatedAt: '2026-09-01T00:00:00.000Z' }, companies: [] };
+    saveAccountCache(session, data as unknown as AppData);
+    savePendingOperations(session, [op]);
+    expect(readAccountCache(session)).toEqual(data);
+    expect(readAccountCache(other)).toBeNull();
+    forgetAccount(session);
+    expect(readAccountCache(session)).toBeNull();
+    expect(readPendingOperations(session)).toEqual([]);
+  });
+
+  it('ignores a cache that is not account data', () => {
+    window.localStorage.setItem('careerflow:account-cache:https://api.example|reem@example.com', '{"applications":1}');
+    expect(readAccountCache(session)).toBeNull();
   });
 });
 
