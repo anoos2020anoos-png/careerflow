@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   SyncQueue,
   applicationFields,
@@ -300,5 +300,35 @@ describe('the request queue', () => {
     release();
     await queue.idle();
     expect(applied).toEqual([]);
+  });
+});
+
+describe('the server the sign-in form suggests', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  async function suggested() {
+    vi.resetModules();
+    return (await import('@/lib/sync')).DEFAULT_SERVER_URL;
+  }
+
+  it('is the hosted server in the published app', async () => {
+    vi.stubEnv('DEV', false);
+    vi.stubEnv('VITE_API_URL', '');
+    expect(await suggested()).toBe('https://careerflow-api-yjwq.onrender.com');
+  });
+
+  it('is this computer while developing', async () => {
+    vi.stubEnv('DEV', true);
+    vi.stubEnv('VITE_API_URL', '');
+    expect(await suggested()).toBe('http://localhost:3000');
+  });
+
+  it('is whatever a build names', async () => {
+    vi.stubEnv('DEV', false);
+    vi.stubEnv('VITE_API_URL', 'https://api.example.com');
+    expect(await suggested()).toBe('https://api.example.com');
   });
 });

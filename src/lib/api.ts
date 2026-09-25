@@ -111,7 +111,9 @@ export function createApiClient({
   baseUrl,
   token,
   fetchImpl,
-  timeoutMs = 15_000,
+  // Generous on purpose: the hosted server sleeps when idle, and its first
+  // answer after that can take most of a minute.
+  timeoutMs = 60_000,
 }: ApiClientOptions): ApiClient {
   const doFetch = fetchImpl ?? globalThis.fetch.bind(globalThis);
 

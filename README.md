@@ -439,7 +439,14 @@ browser as described below. Signed in to a
 from **Settings → Account**, the same data belongs to your account instead, and
 is there in any browser where you sign in.
 
-To try it on your own computer:
+On the live demo, the server address is already filled in: the hosted API at
+`https://careerflow-api-yjwq.onrender.com`, running on Render's free plan with
+its PostgreSQL database on Neon, both in Frankfurt. The free plan puts the
+server to sleep when nobody has used it for a while, so the first sign-in after
+that can take up to a minute; the app waits that long before giving up. A build
+can suggest a different server with `VITE_API_URL`.
+
+To try it on your own computer instead (`npm run dev` suggests this server):
 
 1. Start the API: in the `careerflow-api` repository, `npm install` then
    `npm start`. It listens on `http://localhost:3000` and needs no database

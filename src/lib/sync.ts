@@ -475,7 +475,15 @@ export class SyncQueue {
 
 export const SESSION_KEY = 'careerflow:session';
 export const SERVER_URL_KEY = 'careerflow:server-url';
-export const DEFAULT_SERVER_URL = 'http://localhost:3000';
+/**
+ * The server the sign-in form suggests. The published app points at the hosted
+ * CareerFlow API; `npm run dev` points at one running on this computer. A
+ * build can name another with VITE_API_URL. Whatever someone last signed in to
+ * is remembered and suggested instead (see `lastServerUrl`).
+ */
+export const HOSTED_SERVER_URL = 'https://careerflow-api-yjwq.onrender.com';
+export const DEFAULT_SERVER_URL: string =
+  import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3000' : HOSTED_SERVER_URL);
 
 export interface Session {
   serverUrl: string;

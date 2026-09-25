@@ -565,7 +565,8 @@ const en = {
   'account.localDesc':
     'Your data is kept in this browser. Sign in to a CareerFlow server to keep it in an account instead, and reach it from any browser.',
   'account.server': 'Server address',
-  'account.serverHint': 'Where the CareerFlow API runs, for example http://localhost:3000.',
+  'account.serverHint':
+    'Where the CareerFlow API runs. If the server has been idle, the first sign-in can take up to a minute.',
   'account.email': 'Email',
   'account.password': 'Password',
   'account.passwordHint':
@@ -593,7 +594,8 @@ const en = {
   'account.errorRateLimited': 'Too many attempts. Wait a minute and try again.',
   'account.errorUnreachable':
     'The server could not be reached. Check the address, and that the server is running.',
-  'account.errorTimeout': 'The server took too long to answer. Try again.',
+  'account.errorTimeout':
+    'The server took too long to answer. A server that has been idle can take up to a minute to wake up. Try again.',
   'account.errorPasswordShort': 'Use at least 15 characters.',
   'account.errorPasswordRepeated': 'Do not repeat a single character.',
   'account.errorPasswordEmail': 'Do not use your email address in your password.',
@@ -1141,7 +1143,8 @@ const ar: Record<MessageKey, string> = {
   'account.localDesc':
     'بياناتك محفوظة في هذا المتصفح. سجّل الدخول إلى خادم CareerFlow لتحفظها في حساب بدلًا من ذلك، وتصل إليها من أي متصفح.',
   'account.server': 'عنوان الخادم',
-  'account.serverHint': 'حيث تعمل واجهة CareerFlow البرمجية، مثل http://localhost:3000.',
+  'account.serverHint':
+    'حيث تعمل واجهة CareerFlow البرمجية. إن كان الخادم خاملًا فقد يستغرق أول تسجيل دخول دقيقة.',
   'account.email': 'البريد الإلكتروني',
   'account.password': 'كلمة المرور',
   'account.passwordHint':
@@ -1168,7 +1171,8 @@ const ar: Record<MessageKey, string> = {
   'account.errorTaken': 'يوجد حساب بهذا البريد الإلكتروني. سجّل الدخول بدلًا من ذلك.',
   'account.errorRateLimited': 'محاولات كثيرة. انتظر دقيقة ثم حاول مرة أخرى.',
   'account.errorUnreachable': 'تعذّر الوصول إلى الخادم. تحقّق من العنوان، ومن أن الخادم يعمل.',
-  'account.errorTimeout': 'تأخّر الخادم في الرد. حاول مرة أخرى.',
+  'account.errorTimeout':
+    'تأخّر الخادم في الرد. الخادم الخامل قد يحتاج دقيقة ليستيقظ. حاول مرة أخرى.',
   'account.errorPasswordShort': 'استخدم 15 حرفًا على الأقل.',
   'account.errorPasswordRepeated': 'لا تكرّر حرفًا واحدًا.',
   'account.errorPasswordEmail': 'لا تستخدم بريدك الإلكتروني في كلمة المرور.',

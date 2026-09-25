@@ -3,3 +3,8 @@
 // Brings in Vite's ambient declarations: side-effect CSS imports, asset
 // imports and `import.meta.env`. Without this, `import '@/index.css'` in
 // `main.tsx` has no type declaration and `tsc` fails the build.
+
+interface ImportMetaEnv {
+  /** The API server the sign-in form suggests; see DEFAULT_SERVER_URL. */
+  readonly VITE_API_URL?: string;
+}
