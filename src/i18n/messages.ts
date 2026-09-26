@@ -582,6 +582,10 @@ const en = {
   'account.statusSaving': 'Saving…',
   'account.statusSaved': 'All changes saved',
   'account.statusLoading': 'Loading your data…',
+  'account.statusOffline': 'Offline: {count} changes waiting, sent when the connection returns',
+  'account.statusOfflineOne': 'Offline: 1 change waiting, sent when the connection returns',
+  'account.offlineSignOutWarning':
+    'Some changes have not reached the server yet. They are kept in this browser, even if you close it, and sent once the server can be reached. Signing out now would discard them.',
   'account.copyTitle': 'Your account is empty',
   'account.copyDesc': 'Copy the {count} applications in this browser into it?',
   'account.copyDescOne': 'Copy the 1 application in this browser into it?',
@@ -600,6 +604,8 @@ const en = {
   'account.errorPasswordRepeated': 'Do not repeat a single character.',
   'account.errorPasswordEmail': 'Do not use your email address in your password.',
   'account.errorPasswordApp': 'Do not use the name of this app in your password.',
+  'account.errorPasswordBreached':
+    'This password has appeared in a data breach elsewhere, so attackers try it first. Choose a different one.',
   'account.errorOther': 'The server refused: {message}',
   'sync.saveFailed':
     'A change could not be saved, so your data was reloaded from the server as it stands.',
@@ -1160,6 +1166,10 @@ const ar: Record<MessageKey, string> = {
   'account.statusSaving': 'جارٍ الحفظ…',
   'account.statusSaved': 'حُفظت كل التغييرات',
   'account.statusLoading': 'جارٍ تحميل بياناتك…',
+  'account.statusOffline': 'بلا اتصال: {count} تغييرات بانتظار الإرسال، تُرسل حين يعود الاتصال',
+  'account.statusOfflineOne': 'بلا اتصال: تغيير واحد بانتظار الإرسال، يُرسل حين يعود الاتصال',
+  'account.offlineSignOutWarning':
+    'بعض التغييرات لم تصل إلى الخادم بعد. هي محفوظة في هذا المتصفح حتى لو أغلقته، وتُرسل حين يمكن الوصول إلى الخادم. تسجيل الخروج الآن يحذفها.',
   'account.copyTitle': 'حسابك فارغ',
   'account.copyDesc': 'هل تنسخ إليه الطلبات الـ {count} الموجودة في هذا المتصفح؟',
   'account.copyDescOne': 'هل تنسخ إليه الطلب الوحيد الموجود في هذا المتصفح؟',
@@ -1177,6 +1187,8 @@ const ar: Record<MessageKey, string> = {
   'account.errorPasswordRepeated': 'لا تكرّر حرفًا واحدًا.',
   'account.errorPasswordEmail': 'لا تستخدم بريدك الإلكتروني في كلمة المرور.',
   'account.errorPasswordApp': 'لا تستخدم اسم هذا التطبيق في كلمة المرور.',
+  'account.errorPasswordBreached':
+    'ظهرت كلمة المرور هذه في تسريب بيانات سابق، لذلك يجرّبها المهاجمون أولًا. اختر كلمة غيرها.',
   'account.errorOther': 'رفض الخادم الطلب: {message}',
   'sync.saveFailed': 'تعذّر حفظ أحد التغييرات، فأُعيد تحميل بياناتك كما هي على الخادم.',
   'sync.unreachable':

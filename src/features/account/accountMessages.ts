@@ -37,6 +37,7 @@ const BY_CODE: Record<string, MessageKey> = {
   rate_limited: 'account.errorRateLimited',
   network_error: 'account.errorUnreachable',
   timeout: 'account.errorTimeout',
+  password_breached: 'account.errorPasswordBreached',
 };
 
 /** Explains a failed sign-in or sign-up in the interface language. */

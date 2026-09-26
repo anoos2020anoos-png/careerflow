@@ -44,13 +44,19 @@ import {
 } from '@/lib/api';
 import {
   SyncQueue,
+  alreadyApplied,
   dataOperations,
+  forgetAccount,
   fromServer,
   loadAccountData,
+  readAccountCache,
+  readPendingOperations,
   readSession,
   removeCompanyOperation,
   replaceAllOperation,
+  saveAccountCache,
   saveCompanyOperation,
+  savePendingOperations,
   writeSession,
   type AppData,
   type Session,
@@ -124,13 +130,19 @@ const isUnauthorized = (error: unknown) => error instanceof ApiError && error.st
  * same pure functions; it is then sent to the server in the background (see
  * `lib/sync.ts`), whose answer replaces the local copy. If the server refuses a
  * change, the account's data is reloaded, so the screen never keeps showing
- * something that was not saved. Local storage is left untouched while signed
- * in, and is what comes back on signing out.
+ * something that was not saved. If the server cannot be reached, the change
+ * waits and goes out when it can; until then the account's data and the
+ * waiting changes are kept in this browser, under keys of their own, so
+ * closing the tab loses nothing either. This browser's own data is left
+ * untouched while signed in, and is what comes back on signing out.
  */
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const [initialSession] = useState(() => readSession());
+  // Signed in last time: open with the account's data as it was last shown,
+  // so the app works at once, and without a connection.
+  const [initialCache] = useState(() => (initialSession ? readAccountCache(initialSession) : null));
   const [initial] = useState<InitialState>(() =>
-    initialSession ? { ...emptyData(), notice: null } : readInitialState(),
+    initialSession ? { ...(initialCache ?? emptyData()), notice: null } : readInitialState(),
   );
 
   const [data, setData] = useState<AppData>(initial);
@@ -141,8 +153,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const [session, setSession] = useState<Session | null>(initialSession);
   const sessionRef = useRef<Session | null>(initialSession);
-  const [phase, setPhase] = useState<AccountState['phase']>(initialSession ? 'loading' : 'local');
+  const [phase, setPhase] = useState<AccountState['phase']>(
+    initialSession ? (initialCache ? 'ready' : 'loading') : 'local',
+  );
   const [pending, setPending] = useState(0);
+  const [offline, setOffline] = useState(false);
+  /**
+   * Set when changes were held back (the server could not be reached, or they
+   * were left over from last time). Once they have all gone out, the account's
+   * data is reloaded, in case anything else changed on the server meanwhile.
+   */
+  const reconcileAfterSending = useRef(false);
   const [problem, setProblem] = useState<SyncProblem | null>(null);
   /** What was on this device when the user signed in to an empty account. */
   const [copyOffer, setCopyOffer] = useState<AppData | null>(null);
@@ -169,10 +190,22 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }
   }, [data, session, storageAvailable]);
 
+  // While signed in, the data as shown (unsent changes included) is kept for
+  // the next visit. Not while loading, when the screen is only a placeholder.
+  useEffect(() => {
+    if (!session || phase !== 'ready') return;
+    saveAccountCache(session, data);
+  }, [data, session, phase]);
+
   /** Back to this browser's own data, optionally explaining why. */
   const leaveAccount = useCallback(
     (reason: SyncProblem | null) => {
+      const ending = sessionRef.current;
+      // Cleared first, so emptying the queue does not start a reload.
+      reconcileAfterSending.current = false;
       queueRef.current?.clear();
+      if (ending) forgetAccount(ending);
+      setOffline(false);
       queueRef.current = null;
       clientRef.current = null;
       loadGeneration.current += 1;
@@ -244,13 +277,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const client = createApiClient({ baseUrl: next.serverUrl, token: next.token });
       clientRef.current = client;
       queueRef.current = new SyncQueue({
-        send: async (operation) => {
+        send: async (operation, attempt) => {
           try {
             return await client.request(operation.method, operation.path, operation.body);
           } catch (error) {
             if (operation.allowNotFound && error instanceof ApiError && error.status === 404) {
               return undefined;
             }
+            if (alreadyApplied(operation, attempt, error)) return undefined;
             throw error;
           }
         },
@@ -263,7 +297,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           setProblem(problemFrom(error, 'save_failed'));
           void reload();
         },
-        onPendingChange: setPending,
+        onPendingChange: (waiting) => {
+          setPending(waiting.length);
+          savePendingOperations(next, waiting);
+          if (waiting.length === 0 && reconcileAfterSending.current) {
+            reconcileAfterSending.current = false;
+            void reload();
+          }
+        },
+        onOfflineChange: (isOffline) => {
+          setOffline(isOffline);
+          if (isOffline) reconcileAfterSending.current = true;
+        },
       });
       sessionRef.current = next;
       setSession(next);
@@ -271,13 +316,29 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     [applyResult, leaveAccount, reload],
   );
 
-  // A session remembered from last time: pick it up and load the account.
+  // A session remembered from last time: pick it up, send any changes that
+  // were still waiting when the tab closed, and load the account.
   useEffect(() => {
     if (initialSession && !clientRef.current) {
       enterAccount(initialSession);
-      void reload();
+      const leftOver = readPendingOperations(initialSession);
+      if (leftOver.length > 0) {
+        // Loaded once they have gone out, so the screen does not flash back
+        // to the server's older copy in between.
+        reconcileAfterSending.current = true;
+        queueRef.current?.push(leftOver);
+      } else {
+        void reload();
+      }
     }
   }, [initialSession, enterAccount, reload]);
+
+  // The browser says the network is back: try what is waiting at once.
+  useEffect(() => {
+    const onOnline = () => queueRef.current?.retryNow();
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, []);
 
   /**
    * Applies a change on screen at once and, when signed in, sends it. By
@@ -379,6 +440,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
             serverUrl: session.serverUrl,
             phase,
             saving: pending > 0,
+            offline,
+            unsent: pending,
             problem,
             copyOffer: copyOffer ? copyOffer.applications.length : null,
           }
@@ -386,10 +449,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
             signedIn: false,
             phase: 'local',
             saving: false,
+            offline: false,
+            unsent: 0,
             problem,
             copyOffer: null,
           },
-    [session, phase, pending, problem, copyOffer],
+    [session, phase, pending, offline, problem, copyOffer],
   );
 
   const value = useMemo<AppDataValue>(() => {
@@ -514,6 +579,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       retrySync: () => {
         setProblem(null);
         if (!sessionRef.current) return;
+        queueRef.current?.retryNow();
         setPhase((current) => (current === 'unavailable' ? 'loading' : current));
         void reload();
       },

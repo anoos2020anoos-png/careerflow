@@ -160,6 +160,13 @@ function SignedIn() {
         <SyncStatus className="mt-1" />
       </div>
 
+      {account.offline && account.unsent > 0 ? (
+        <p className="flex items-start gap-2 text-sm text-ink-muted">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+          {t('account.offlineSignOutWarning')}
+        </p>
+      ) : null}
+
       {account.copyOffer !== null ? (
         <div className="flex flex-col gap-3 rounded-xl border border-brand/30 bg-brand-soft px-4 py-3">
           <div>

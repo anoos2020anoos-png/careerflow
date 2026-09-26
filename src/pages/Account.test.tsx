@@ -6,7 +6,7 @@ import { ApplicationsPage } from '@/pages/ApplicationsPage';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { makeApplication } from '@/test/factories';
 import { STORAGE_KEY, saveData } from '@/lib/storage';
-import { SESSION_KEY } from '@/lib/sync';
+import { SESSION_KEY, readAccountCache, readPendingOperations, type Session } from '@/lib/sync';
 import { useAppData } from '@/state/app-data-context';
 import type { Application } from '@/types';
 
@@ -18,6 +18,7 @@ import type { Application } from '@/types';
 function fakeServer(applications: Application[] = []) {
   const requests: { method: string; path: string; body: unknown }[] = [];
   let failNext: { status: number; code: string } | null = null;
+  let down = false;
   const state = { applications: [...applications] };
 
   const json = (status: number, body: unknown) =>
@@ -27,6 +28,7 @@ function fakeServer(applications: Application[] = []) {
     const path = new URL(url).pathname;
     const method = init.method ?? 'GET';
     const body = typeof init.body === 'string' ? JSON.parse(init.body) : undefined;
+    if (down) throw new TypeError('Failed to fetch');
     requests.push({ method, path, body });
 
     if (failNext) {
@@ -86,6 +88,10 @@ function fakeServer(applications: Application[] = []) {
     state,
     failNextWith: (status: number, code: string) => {
       failNext = { status, code };
+    },
+    /** No answer at all, as with no network. */
+    setDown: (value: boolean) => {
+      down = value;
     },
   };
 }
@@ -268,5 +274,131 @@ describe('signing in to a CareerFlow server', () => {
     expect(context?.applications[0]?.company).toBe('Only On This Device');
     expect(server.requests.some((request) => request.path === '/auth/logout')).toBe(true);
     expect(screen.getByRole('button', { name: /^sign in$/i })).toBeInTheDocument();
+  });
+});
+
+describe('working without a connection while signed in', () => {
+  const session: Session = {
+    serverUrl: 'http://api.test',
+    token: 'A'.repeat(43),
+    email: 'reem@example.com',
+    expiresAt: '2099-01-01T00:00:00.000Z',
+  };
+  const emptyProfile = { qualifications: [], updatedAt: '2026-09-01T00:00:00.000Z' };
+
+  it('keeps a change the server could not receive, and sends it when the connection returns', async () => {
+    const server = fakeServer([onServer]);
+    vi.stubGlobal('fetch', server.fetchImpl);
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <SettingsPage />
+        <Probe />
+      </>,
+    );
+    await signIn(user);
+    await waitFor(() => expect(context?.applications).toHaveLength(1));
+
+    server.setDown(true);
+    act(() => context?.setStatus(onServer.id, 'interview'));
+
+    expect(await screen.findByText(/offline: 1 change waiting/i)).toBeInTheDocument();
+    expect(context?.account.offline).toBe(true);
+    // Nothing is undone on screen, and the change would survive the tab closing.
+    expect(context?.applications[0]?.status).toBe('interview');
+    expect(readPendingOperations(session)).toHaveLength(1);
+    expect(screen.getByText(/signing out now would discard them/i)).toBeInTheDocument();
+
+    server.setDown(false);
+    const before = server.requests.length;
+    act(() => {
+      window.dispatchEvent(new Event('online'));
+    });
+
+    await waitFor(() => expect(screen.getByText(/all changes saved/i)).toBeInTheDocument());
+    expect(server.state.applications[0]?.status).toBe('interview');
+    expect(readPendingOperations(session)).toEqual([]);
+    // Once caught up, the account's data is read again from the server.
+    await waitFor(() =>
+      expect(
+        server.requests.slice(before).some((r) => r.method === 'GET' && r.path === '/applications'),
+      ).toBe(true),
+    );
+    expect(context?.account.offline).toBe(false);
+  });
+
+  it('opens with the account as last shown, and sends what was left unsent last time', async () => {
+    const server = fakeServer([onServer]);
+    vi.stubGlobal('fetch', server.fetchImpl);
+    window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    const shown = { ...onServer, status: 'offer' as const };
+    window.localStorage.setItem(
+      'careerflow:account-cache:http://api.test|reem@example.com',
+      JSON.stringify({ applications: [shown], profile: emptyProfile, companies: [] }),
+    );
+    window.localStorage.setItem(
+      'careerflow:pending:http://api.test|reem@example.com',
+      JSON.stringify([
+        {
+          method: 'PATCH',
+          path: `/applications/${onServer.id}`,
+          body: { status: 'offer' },
+          result: 'application',
+          target: `application:${onServer.id}`,
+        },
+      ]),
+    );
+
+    renderWithProviders(<Probe />);
+    // At once, before any answer: the data as it was last shown.
+    expect(context?.account.phase).toBe('ready');
+    expect(context?.applications[0]?.status).toBe('offer');
+
+    await waitFor(() => expect(server.state.applications[0]?.status).toBe('offer'));
+    await waitFor(() => expect(readPendingOperations(session)).toEqual([]));
+    await waitFor(() =>
+      expect(server.requests.some((r) => r.method === 'GET' && r.path === '/applications')).toBe(true),
+    );
+    expect(context?.applications[0]?.status).toBe('offer');
+  });
+
+  it('opens with the last data even when the server cannot be reached', async () => {
+    const server = fakeServer([onServer]);
+    server.setDown(true);
+    vi.stubGlobal('fetch', server.fetchImpl);
+    window.localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    window.localStorage.setItem(
+      'careerflow:account-cache:http://api.test|reem@example.com',
+      JSON.stringify({ applications: [onServer], profile: emptyProfile, companies: [] }),
+    );
+    renderWithProviders(
+      <>
+        <ApplicationsPage />
+        <Probe />
+      </>,
+    );
+    expect(screen.getAllByText('Qamar Health').length).toBeGreaterThan(0);
+    await waitFor(() => expect(context?.account.problem?.kind).toBe('unreachable'));
+    expect(context?.account.phase).toBe('ready');
+    expect(screen.getAllByText('Qamar Health').length).toBeGreaterThan(0);
+  });
+
+  it('forgets what it kept for the account on signing out', async () => {
+    const server = fakeServer([onServer]);
+    vi.stubGlobal('fetch', server.fetchImpl);
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <SettingsPage />
+        <Probe />
+      </>,
+    );
+    await signIn(user);
+    await waitFor(() => expect(readAccountCache(session)?.applications).toHaveLength(1));
+
+    await user.click(screen.getByRole('button', { name: /^sign out$/i }));
+    await waitFor(() => expect(context?.account.signedIn).toBe(false));
+    expect(readAccountCache(session)).toBeNull();
+    expect(readPendingOperations(session)).toEqual([]);
   });
 });
