@@ -725,16 +725,29 @@ already goes there.
 
 ## Screenshots
 
-None are committed to the repository. The
-[live demo](https://anoos2020anoos-png.github.io/careerflow/) is the visual
-reference in the meantime — it runs the same build, seeded with the sample data,
-and needs nothing installed.
+Captured from a production build with the sample data a first visit starts
+with, in Chromium. Web fonts were not reachable where they were taken, so the
+text is in the system fallback font rather than Inter and Noto Sans Arabic.
 
-To add captures here: run `npm run dev`, then capture the dashboard, the
-applications table, the Kanban board and an application's detail page. Worth
-doing in both themes and both languages, since the right-to-left layout is one
-of the things worth showing. Save them under `docs/screenshots/` and link them
-from this section.
+**Dashboard**
+
+![Dashboard in English: totals, weekly activity and applications by status](docs/screenshots/dashboard-en.png)
+
+**Applications**
+
+![Applications table in English](docs/screenshots/applications-en.png)
+
+**Arabic, dark theme:** the whole layout mirrors to right-to-left.
+
+![Dashboard in Arabic, dark theme](docs/screenshots/dashboard-ar-dark.png)
+
+**An application's detail page, in Arabic**
+
+![Detail page in Arabic with role details, follow-up tasks and activity](docs/screenshots/detail-ar.png)
+
+**On a phone**
+
+<img src="docs/screenshots/phone-ar.png" alt="Dashboard in Arabic at phone width, with the bottom navigation bar" width="320">
 
 ## Licence
 
