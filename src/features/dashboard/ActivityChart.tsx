@@ -10,7 +10,7 @@ import {
 import { Card, CardHeader } from '@/components/ui/Card';
 import { useTheme } from '@/state/theme-context';
 import { paletteFor } from '@/features/dashboard/chartTheme';
-import { useT } from '@/i18n/i18n-context';
+import { useI18n } from '@/i18n/i18n-context';
 import { plural } from '@/i18n/labels';
 import type { ActivityBucket } from '@/lib/metrics';
 import { formatDateOnly } from '@/lib/dates';
@@ -23,7 +23,8 @@ import { formatDateOnly } from '@/lib/dates';
  */
 export function ActivityChart({ data }: { data: ActivityBucket[] }) {
   const { resolved } = useTheme();
-  const t = useT();
+  const { t, dir } = useI18n();
+  const rtl = dir === 'rtl';
   const palette = paletteFor(resolved);
   const total = data.reduce((sum, bucket) => sum + bucket.count, 0);
 
@@ -36,10 +37,11 @@ export function ActivityChart({ data }: { data: ActivityBucket[] }) {
       <div className="px-2 py-4">
         <div className="cf-chart h-56 w-full" aria-hidden="true">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -18 }}>
+            <BarChart data={data} margin={rtl ? { top: 8, right: -18, bottom: 0, left: 12 } : { top: 8, right: 12, bottom: 0, left: -18 }}>
               <CartesianGrid vertical={false} stroke={palette.grid} strokeDasharray="3 3" />
               <XAxis
                 dataKey="label"
+                reversed={rtl}
                 tickLine={false}
                 axisLine={false}
                 interval="preserveStartEnd"
@@ -47,6 +49,7 @@ export function ActivityChart({ data }: { data: ActivityBucket[] }) {
                 stroke={palette.axis}
               />
               <YAxis
+                orientation={rtl ? 'right' : 'left'}
                 allowDecimals={false}
                 tickLine={false}
                 axisLine={false}

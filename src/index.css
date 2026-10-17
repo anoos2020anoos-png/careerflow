@@ -59,6 +59,18 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  /*
+   * Arabic glyphs read smaller than Latin ones at the same size, so the Arabic
+   * interface gets a slightly larger base and more generous line height.
+   */
+  html[dir='rtl'] {
+    font-size: 106.25%;
+  }
+
+  html[dir='rtl'] body {
+    line-height: 1.65;
+  }
+
   body {
     @apply bg-canvas text-ink antialiased;
     font-family: theme('fontFamily.sans');
@@ -97,14 +109,15 @@
   }
 
   /*
-   * Charts stay left-to-right in both languages.
+   * Charts are laid out left-to-right internally in both languages.
    *
    * Recharts positions its tick labels with `text-anchor: start|end`, which
    * assumes a left-to-right coordinate system: inside an RTL document those
    * anchors flip, and the category labels get drawn underneath the bars
    * instead of beside them. Pinning the chart to `ltr` keeps the library in
-   * the geometry it was built for. Only the label text is translated, and a
-   * left-to-right value axis is a normal choice in Arabic interfaces anyway.
+   * the geometry it was built for. In Arabic each chart then mirrors itself
+   * through Recharts' own `reversed` and `orientation` axis options, so bars
+   * grow from the right and time runs right to left like the rest of the page.
    * Everything around the chart — card, heading, description and the
    * screen-reader table — still mirrors with the rest of the page.
    */

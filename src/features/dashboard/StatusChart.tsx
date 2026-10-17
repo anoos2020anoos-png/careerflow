@@ -11,7 +11,7 @@ import {
 import { Card, CardHeader } from '@/components/ui/Card';
 import { useTheme } from '@/state/theme-context';
 import { paletteFor } from '@/features/dashboard/chartTheme';
-import { useT } from '@/i18n/i18n-context';
+import { useI18n } from '@/i18n/i18n-context';
 import { plural, statusLabel } from '@/i18n/labels';
 import type { StatusBreakdownEntry } from '@/lib/metrics';
 
@@ -24,7 +24,8 @@ import type { StatusBreakdownEntry } from '@/lib/metrics';
  */
 export function StatusChart({ data }: { data: StatusBreakdownEntry[] }) {
   const { resolved } = useTheme();
-  const t = useT();
+  const { t, dir } = useI18n();
+  const rtl = dir === 'rtl';
   const palette = paletteFor(resolved);
   const total = data.reduce((sum, entry) => sum + entry.count, 0);
   const max = Math.max(1, ...data.map((entry) => entry.count));
@@ -42,16 +43,17 @@ export function StatusChart({ data }: { data: StatusBreakdownEntry[] }) {
             <BarChart
               data={rows}
               layout="vertical"
-              margin={{ top: 4, right: 32, bottom: 0, left: 8 }}
+              margin={rtl ? { top: 4, right: 8, bottom: 0, left: 32 } : { top: 4, right: 32, bottom: 0, left: 8 }}
               barCategoryGap={6}
             >
-              <XAxis type="number" hide domain={[0, max]} allowDecimals={false} />
+              <XAxis type="number" hide domain={[0, max]} allowDecimals={false} reversed={rtl} />
               <YAxis
                 type="category"
                 dataKey="label"
+                orientation={rtl ? 'right' : 'left'}
                 tickLine={false}
                 axisLine={false}
-                width={78}
+                width={84}
                 stroke={palette.axis}
               />
               <Tooltip
@@ -70,7 +72,7 @@ export function StatusChart({ data }: { data: StatusBreakdownEntry[] }) {
               />
               <Bar
                 dataKey="count"
-                radius={[0, 4, 4, 0]}
+                radius={rtl ? [4, 0, 0, 4] : [0, 4, 4, 0]}
                 maxBarSize={18}
                 name={t('nav.applications')}
               >
@@ -79,7 +81,7 @@ export function StatusChart({ data }: { data: StatusBreakdownEntry[] }) {
                 ))}
                 <LabelList
                   dataKey="count"
-                  position="right"
+                  position={rtl ? 'left' : 'right'}
                   offset={8}
                   className="fill-ink"
                   style={{ fontSize: 12, fontWeight: 500 }}
