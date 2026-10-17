@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { StatusSelect } from '@/features/applications/StatusSelect';
-import { formatDateOnly, formatInstant } from '@/lib/dates';
+import { formatDateOnly } from '@/lib/dates';
 import { useT } from '@/i18n/i18n-context';
 import type { Translate } from '@/i18n/i18n-context';
 import { arrangementLabel, employmentLabel, salaryText } from '@/i18n/labels';
@@ -96,9 +96,6 @@ export function ApplicationsList({
               <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
                 {t('applications.colStatus')}
               </th>
-              <th scope="col" className="px-4 py-3 font-medium text-ink-muted">
-                {t('applications.colUpdated')}
-              </th>
               <th scope="col" className="px-4 py-3 text-end font-medium text-ink-muted">
                 {t('applications.colActions')}
               </th>
@@ -112,7 +109,7 @@ export function ApplicationsList({
                   key={application.id}
                   className="border-b border-line last:border-b-0 hover:bg-surface-muted/40"
                 >
-                  <td className="px-4 py-3 align-top">
+                  <td className="px-4 py-4 align-middle">
                     <Link
                       to={`/applications/${application.id}`}
                       className="font-medium text-ink underline-offset-4 hover:text-brand hover:underline"
@@ -131,17 +128,18 @@ export function ApplicationsList({
                       </p>
                     ) : null}
                   </td>
-                  <td className="px-4 py-3 align-top text-ink-muted">
-                    <p>{application.location || t('common.none')}</p>
-                    <p className="mt-1 flex flex-wrap gap-1">
-                      <Badge>{arrangementLabel(t, application.workArrangement)}</Badge>
-                      <Badge>{employmentLabel(t, application.employmentType)}</Badge>
+                  <td className="px-4 py-4 align-middle text-ink-muted">
+                    <p className="text-ink">{application.location || t('common.none')}</p>
+                    <p className="mt-0.5 text-xs">
+                      {arrangementLabel(t, application.workArrangement)}
+                      {' · '}
+                      {employmentLabel(t, application.employmentType)}
                     </p>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 align-top text-ink-muted">
+                  <td className="whitespace-nowrap px-4 py-4 align-middle text-ink-muted">
                     {formatDateOnly(application.appliedDate)}
                   </td>
-                  <td className="px-4 py-3 align-top">
+                  <td className="px-4 py-4 align-middle">
                     <StatusSelect
                       value={application.status}
                       onChange={(status) => onStatusChange(application.id, status)}
@@ -152,10 +150,7 @@ export function ApplicationsList({
                       size="sm"
                     />
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 align-top text-xs text-ink-muted">
-                    {formatInstant(application.updatedAt)}
-                  </td>
-                  <td className="px-4 py-3 align-top">
+                  <td className="px-4 py-4 align-middle">
                     <div className="flex justify-end gap-1">
                       <Button
                         variant="ghost"
@@ -189,7 +184,7 @@ export function ApplicationsList({
         </table>
       </div>
 
-      {/* Cards for narrow screens, where a six-column table would be cramped */}
+      {/* Cards for narrow screens, where a five-column table would be cramped */}
       <ul className="flex flex-col gap-3 md:hidden">
         {applications.map((application) => {
           const salary = salaryText(t, application);

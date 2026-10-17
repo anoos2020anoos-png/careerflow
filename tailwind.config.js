@@ -32,6 +32,7 @@ export default {
           'Inter',
           // Inter has no Arabic glyphs; the browser falls through to this for
           // Arabic text, which keeps one visual weight across both scripts.
+          'IBM Plex Sans Arabic',
           'Noto Sans Arabic',
           'ui-sans-serif',
           'system-ui',
